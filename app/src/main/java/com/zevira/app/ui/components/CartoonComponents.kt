@@ -1,4 +1,4 @@
-﻿package com.zevira.app.ui.components
+package com.zevira.app.ui.components
 
 import android.view.HapticFeedbackConstants
 import androidx.compose.animation.core.animateFloatAsState
@@ -9,10 +9,12 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -31,6 +33,7 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -53,7 +56,7 @@ fun CartoonCard(
     shadowOffset: Dp = 4.dp,
     content: @Composable () -> Unit
 ) {
-    Box(modifier = modifier) {
+    Box(modifier = modifier.padding(bottom = shadowOffset)) {
         // Solid offset shadow
         Box(
             modifier = Modifier
@@ -64,6 +67,7 @@ fun CartoonCard(
         // Top Card Surface
         Box(
             modifier = Modifier
+                .fillMaxWidth()
                 .background(backgroundColor, shape)
                 .border(borderWidth, borderColor, shape)
                 .clip(shape)
@@ -101,7 +105,7 @@ fun CartoonButton(
 
     Box(
         modifier = modifier
-            .defaultMinSize(minHeight = 48.dp)
+            .padding(bottom = shadowOffset)
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
@@ -124,27 +128,33 @@ fun CartoonButton(
         // Top button element
         Box(
             modifier = Modifier
+                .fillMaxWidth()
+                .defaultMinSize(minHeight = 44.dp)
                 .offset(y = currentOffset.dp)
                 .background(if (enabled) backgroundColor else Color.LightGray, shape)
                 .border(borderWidth, if (enabled) borderColor else Color.Gray, shape)
-                .padding(horizontal = 24.dp, vertical = 12.dp),
+                .clip(shape)
+                .padding(horizontal = 14.dp, vertical = 10.dp),
             contentAlignment = Alignment.Center
         ) {
             if (content != null) {
                 content()
             } else {
                 Row(
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
                 ) {
                     if (leadingIcon != null) {
                         leadingIcon()
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
                     }
                     Text(
                         text = text,
                         color = contentColor,
                         fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp
+                        fontSize = 15.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }
@@ -218,7 +228,9 @@ fun CartoonChip(
             text = text,
             color = textColor,
             fontWeight = FontWeight.Bold,
-            fontSize = 13.sp
+            fontSize = 12.sp,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
         )
     }
 }

@@ -1,4 +1,4 @@
-﻿package com.zevira.app.ui.screens.profile
+package com.zevira.app.ui.screens.profile
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
@@ -96,6 +97,7 @@ fun ProfileScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(SurfaceTint)
+            .statusBarsPadding()
             .padding(16.dp)
             .verticalScroll(scrollState)
     ) {

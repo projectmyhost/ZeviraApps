@@ -1,4 +1,4 @@
-﻿package com.zevira.app.ui.screens.permission
+package com.zevira.app.ui.screens.permission
 
 import android.Manifest
 import android.content.Context
@@ -16,8 +16,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -73,14 +75,16 @@ fun PermissionPrimerScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(SurfaceTint)
+            .statusBarsPadding()
+            .navigationBarsPadding()
             .padding(20.dp)
             .verticalScroll(scrollState),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Spacer(modifier = Modifier.height(24.dp))
-            MascotJejak(size = 110.dp, state = MascotState.IDLE)
+            Spacer(modifier = Modifier.height(12.dp))
+            MascotJejak(size = 100.dp, state = MascotState.IDLE)
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(

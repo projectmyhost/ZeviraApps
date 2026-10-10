@@ -1,8 +1,13 @@
-﻿package com.zevira.app.ui.navigation
+package com.zevira.app.ui.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.platform.LocalContext
+import com.zevira.app.data.local.preferences.UserPreferencesDataStore
+import kotlinx.coroutines.launch
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -41,8 +46,14 @@ fun ZeviraNavGraph(
         }
 
         composable(NavRoute.PermissionPrimer.route) {
+            val context = LocalContext.current
+            val coroutineScope = rememberCoroutineScope()
+            val prefs = remember { UserPreferencesDataStore(context) }
             PermissionPrimerScreen(
                 onPermissionsGranted = {
+                    coroutineScope.launch {
+                        prefs.setOnboardingCompleted(true)
+                    }
                     navController.navigate(NavRoute.Main.route) {
                         popUpTo(NavRoute.PermissionPrimer.route) { inclusive = true }
                     }

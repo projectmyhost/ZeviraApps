@@ -1,4 +1,4 @@
-﻿package com.zevira.app.ui.screens.returntostart
+package com.zevira.app.ui.screens.returntostart
 
 import android.location.Location
 import androidx.compose.animation.core.animateFloatAsState
@@ -13,8 +13,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -102,6 +104,8 @@ fun ReturnToStartScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(SurfaceTint)
+            .statusBarsPadding()
+            .navigationBarsPadding()
             .padding(20.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween
@@ -109,8 +113,7 @@ fun ReturnToStartScreen(
         // Top Bar
         Row(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 24.dp),
+                .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(

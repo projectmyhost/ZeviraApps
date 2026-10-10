@@ -1,4 +1,4 @@
-﻿package com.zevira.app.ui.screens.map
+package com.zevira.app.ui.screens.map
 
 import android.content.Intent
 import androidx.compose.foundation.background
@@ -57,6 +57,16 @@ import com.zevira.app.ui.components.CartoonButton
 import com.zevira.app.ui.components.CartoonCard
 import com.zevira.app.ui.components.CartoonChip
 import com.zevira.app.ui.theme.CoralRed
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.core.content.ContextCompat
+import com.zevira.app.ui.components.MascotJejak
+import com.zevira.app.ui.components.MascotState
 import com.zevira.app.ui.theme.ElectricBlue
 import com.zevira.app.ui.theme.MintGreen
 import com.zevira.app.ui.theme.PillShape
@@ -80,14 +90,40 @@ fun TrackingLiveScreen(
     var recenterTrigger by remember { mutableLongStateOf(0L) }
     var showRecenterButton by remember { mutableStateOf(false) }
 
-    // Start Tracking Service if not running
-    LaunchedEffect(Unit) {
-        if (!trackingState.isTracking) {
+    // Check location permission state
+    val fineGranted = ContextCompat.checkSelfPermission(
+        context,
+        Manifest.permission.ACCESS_FINE_LOCATION
+    ) == PackageManager.PERMISSION_GRANTED
+    val coarseGranted = ContextCompat.checkSelfPermission(
+        context,
+        Manifest.permission.ACCESS_COARSE_LOCATION
+    ) == PackageManager.PERMISSION_GRANTED
+
+    var hasLocationPermission by remember { mutableStateOf(fineGranted || coarseGranted) }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { perms ->
+        val fine = perms[Manifest.permission.ACCESS_FINE_LOCATION] ?: false
+        val coarse = perms[Manifest.permission.ACCESS_COARSE_LOCATION] ?: false
+        if (fine || coarse) {
+            hasLocationPermission = true
+        }
+    }
+
+    // Start Tracking Service ONLY when location permission is granted
+    LaunchedEffect(hasLocationPermission) {
+        if (hasLocationPermission && !trackingState.isTracking) {
             val startIntent = Intent(context, TrackingService::class.java).apply {
                 action = TrackingService.ACTION_START
                 putExtra(TrackingService.EXTRA_MODE, TrackingMode.WALK.name)
             }
-            context.startForegroundService(startIntent)
+            try {
+                context.startForegroundService(startIntent)
+            } catch (e: Exception) {
+                timber.log.Timber.e(e, "Failed to startForegroundService")
+            }
         }
     }
 
@@ -120,7 +156,8 @@ fun TrackingLiveScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 44.dp, start = 16.dp, end = 16.dp),
+                .statusBarsPadding()
+                .padding(top = 10.dp, start = 16.dp, end = 16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -243,31 +280,41 @@ fun TrackingLiveScreen(
                 // Metrics Row (Distance, Time, Speed)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                    horizontalArrangement = Arrangement.SpaceEvenly,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     // Distance
-                    Column {
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
                         Text(
                             text = stringResource(R.string.stat_distance),
                             color = TextSecondary,
-                            fontSize = 12.sp
+                            fontSize = 11.sp,
+                            maxLines = 1
                         )
                         val distKm = trackingState.distanceMeters / 1000.0
                         Text(
                             text = String.format("%.2f km", distKm),
                             fontWeight = FontWeight.ExtraBold,
                             color = TextPrimary,
-                            fontSize = 24.sp
+                            fontSize = 20.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
 
                     // Duration
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
                         Text(
                             text = stringResource(R.string.stat_duration),
                             color = TextSecondary,
-                            fontSize = 12.sp
+                            fontSize = 11.sp,
+                            maxLines = 1
                         )
                         val mins = trackingState.durationSeconds / 60
                         val secs = trackingState.durationSeconds % 60
@@ -275,22 +322,30 @@ fun TrackingLiveScreen(
                             text = String.format("%02d:%02d", mins, secs),
                             fontWeight = FontWeight.ExtraBold,
                             color = TextPrimary,
-                            fontSize = 24.sp
+                            fontSize = 20.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
 
                     // Speed
-                    Column(horizontalAlignment = Alignment.End) {
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
                         Text(
                             text = "Kecepatan",
                             color = TextSecondary,
-                            fontSize = 12.sp
+                            fontSize = 11.sp,
+                            maxLines = 1
                         )
                         Text(
                             text = String.format("%.1f km/j", trackingState.currentSpeedKmh),
                             fontWeight = FontWeight.ExtraBold,
                             color = TextPrimary,
-                            fontSize = 24.sp
+                            fontSize = 20.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                 }
@@ -369,6 +424,61 @@ fun TrackingLiveScreen(
                             text = if (isPressingStop) "Tahan..." else stringResource(R.string.btn_stop_hold),
                             backgroundColor = CoralRed,
                             contentColor = SurfaceWhite,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
+            }
+        }
+
+        // 5. Friendly Permission Prompt Overlay (If location permission is not yet granted)
+        if (!hasLocationPermission) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0x99000000))
+                    .padding(24.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                CartoonCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    backgroundColor = SurfaceWhite
+                ) {
+                    Column(
+                        modifier = Modifier.padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        MascotJejak(size = 90.dp, state = MascotState.IDLE)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "Izin Lokasi Diperlukan 📍",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = TextPrimary,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Zevira membutuhkan izin lokasi untuk menampilkan posisimu di peta dan merekam jejak perjalanan secara realtime.",
+                            fontSize = 14.sp,
+                            color = TextSecondary,
+                            textAlign = TextAlign.Center,
+                            lineHeight = 20.sp
+                        )
+                        Spacer(modifier = Modifier.height(20.dp))
+                        CartoonButton(
+                            onClick = {
+                                val perms = mutableListOf(
+                                    Manifest.permission.ACCESS_FINE_LOCATION,
+                                    Manifest.permission.ACCESS_COARSE_LOCATION
+                                )
+                                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                                    perms.add(Manifest.permission.POST_NOTIFICATIONS)
+                                }
+                                permissionLauncher.launch(perms.toTypedArray())
+                            },
+                            text = "Aktifkan Izin Lokasi",
+                            backgroundColor = ElectricBlue,
                             modifier = Modifier.fillMaxWidth()
                         )
                     }

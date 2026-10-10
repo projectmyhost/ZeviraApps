@@ -21,7 +21,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -107,13 +109,14 @@ fun DashboardScreen(
         StarSky(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(210.dp)
+                .wrapContentHeight()
         ) {
             Column(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(20.dp),
-                verticalArrangement = Arrangement.SpaceBetween
+                    .fillMaxWidth()
+                    .statusBarsPadding()
+                    .padding(horizontal = 20.dp, vertical = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 // Top row with stars counter
                 Row(
@@ -134,7 +137,7 @@ fun DashboardScreen(
                         modifier = Modifier
                             .background(Color(0x33000000), PillShape)
                             .border(1.dp, StarYellow, PillShape)
-                            .padding(horizontal = 10.dp, vertical = 4.dp),
+                            .padding(horizontal = 12.dp, vertical = 6.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
@@ -143,7 +146,7 @@ fun DashboardScreen(
                             tint = StarYellow,
                             modifier = Modifier.size(16.dp)
                         )
-                        Spacer(modifier = Modifier.width(4.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
                         Text(
                             text = "${state.totalStars} Bintang",
                             color = SurfaceWhite,
@@ -175,7 +178,7 @@ fun DashboardScreen(
                     }
 
                     MascotJejak(
-                        size = 80.dp,
+                        size = 72.dp,
                         state = MascotState.IDLE
                     )
                 }
@@ -254,17 +257,22 @@ fun DashboardScreen(
                                 lineHeight = 16.sp
                             )
                             Spacer(modifier = Modifier.height(10.dp))
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
                                 CartoonButton(
                                     onClick = onNavigateToLogin,
-                                    text = stringResource(R.string.btn_login_register),
-                                    backgroundColor = ElectricBlue
+                                    text = "Login / Daftar",
+                                    backgroundColor = ElectricBlue,
+                                    modifier = Modifier.weight(1f)
                                 )
                                 CartoonButton(
                                     onClick = { viewModel.activateDemoSession() },
-                                    text = stringResource(R.string.btn_try_demo),
+                                    text = "Mode Demo",
                                     backgroundColor = StarYellow,
-                                    contentColor = TextPrimary
+                                    contentColor = TextPrimary,
+                                    modifier = Modifier.weight(1f)
                                 )
                             }
                         }

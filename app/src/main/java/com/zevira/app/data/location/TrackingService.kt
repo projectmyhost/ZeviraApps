@@ -1,4 +1,4 @@
-﻿package com.zevira.app.data.location
+package com.zevira.app.data.location
 
 import android.annotation.SuppressLint
 import android.app.Notification
@@ -12,6 +12,9 @@ import android.location.Location
 import android.os.Build
 import android.os.IBinder
 import android.os.Looper
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
 import androidx.core.app.NotificationCompat
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationCallback
@@ -132,6 +135,21 @@ class TrackingService : Service() {
         activity: SportActivity,
         restoredTripId: String? = null
     ) {
+        val hasFine = ContextCompat.checkSelfPermission(
+            this,
+            Manifest.permission.ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
+        val hasCoarse = ContextCompat.checkSelfPermission(
+            this,
+            Manifest.permission.ACCESS_COARSE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
+
+        if (!hasFine && !hasCoarse) {
+            Timber.e("startTracking aborted: Location permission ACCESS_FINE_LOCATION or ACCESS_COARSE_LOCATION not granted!")
+            stopSelf()
+            return
+        }
+
         this.trackingMode = mode
         this.sportActivity = activity
         this.tripId = restoredTripId ?: UUID.randomUUID().toString()
@@ -449,15 +467,23 @@ class TrackingService : Service() {
     }
 
     private fun startForegroundWithNotification() {
-        val notification = buildTrackingNotification()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            startForeground(
-                ZeviraApp.NOTIFICATION_TRACKING_ID,
-                notification,
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION
-            )
-        } else {
-            startForeground(ZeviraApp.NOTIFICATION_TRACKING_ID, notification)
+        try {
+            val notification = buildTrackingNotification()
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                startForeground(
+                    ZeviraApp.NOTIFICATION_TRACKING_ID,
+                    notification,
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION
+                )
+            } else {
+                startForeground(ZeviraApp.NOTIFICATION_TRACKING_ID, notification)
+            }
+        } catch (e: SecurityException) {
+            Timber.e(e, "SecurityException while calling startForeground with location type")
+            stopSelf()
+        } catch (e: Exception) {
+            Timber.e(e, "Exception while calling startForeground")
+            stopSelf()
         }
     }
 
