@@ -234,10 +234,45 @@ class TrackingService : Service() {
             // Finalize Trip in Room
             val currentTrip = tripDao.getTripById(tripId)
             if (currentTrip != null) {
-                val allPoints = locationPointDao.getPointsForTrip(tripId)
+                var allPoints = locationPointDao.getPointsForTrip(tripId)
+                val resolvedEndLat = _trackingState.value.currentLat ?: currentTrip.endLat ?: startLat
+                val resolvedEndLng = _trackingState.value.currentLng ?: currentTrip.endLng ?: startLng
+                val resolvedStartLat = currentTrip.startLat ?: startLat ?: resolvedEndLat
+                val resolvedStartLng = currentTrip.startLng ?: startLng ?: resolvedEndLng
+
+                // Ensure at least start and end points exist in DB if coordinates were detected
+                if (allPoints.isEmpty() && resolvedStartLat != null && resolvedStartLng != null) {
+                    val p1 = LocationPointEntity(
+                        tripId = tripId,
+                        latitude = resolvedStartLat,
+                        longitude = resolvedStartLng,
+                        altitude = 0.0,
+                        accuracy = _trackingState.value.currentAccuracy,
+                        speed = 0f,
+                        bearing = 0f,
+                        timestamp = currentTrip.startTime
+                    )
+                    locationPointDao.insertPoint(p1)
+                    if (resolvedEndLat != null && resolvedEndLng != null &&
+                        (resolvedEndLat != resolvedStartLat || resolvedEndLng != resolvedStartLng)) {
+                        val p2 = LocationPointEntity(
+                            tripId = tripId,
+                            latitude = resolvedEndLat,
+                            longitude = resolvedEndLng,
+                            altitude = 0.0,
+                            accuracy = _trackingState.value.currentAccuracy,
+                            speed = 0f,
+                            bearing = 0f,
+                            timestamp = System.currentTimeMillis()
+                        )
+                        locationPointDao.insertPoint(p2)
+                    }
+                    allPoints = locationPointDao.getPointsForTrip(tripId)
+                }
+
                 val latLngs = allPoints.map { LatLngPoint(it.latitude, it.longitude) }
-                val simplified = RouteSimplifier.simplify(latLngs, epsilonMeters = 3.0)
-                val encoded = RouteSimplifier.encodePolyline(simplified)
+                val simplified = if (latLngs.size >= 3) RouteSimplifier.simplify(latLngs, epsilonMeters = 3.0) else latLngs
+                val encoded = if (simplified.isNotEmpty()) RouteSimplifier.encodePolyline(simplified) else ""
 
                 val avgSpeed = if (durationSeconds > 0) {
                     (distanceMeters / 1000.0) / (durationSeconds / 3600.0)
@@ -251,8 +286,10 @@ class TrackingService : Service() {
                     calories = _trackingState.value.calories,
                     avgSpeedKmh = avgSpeed,
                     maxSpeedKmh = maxSpeedKmh,
-                    endLat = _trackingState.value.currentLat,
-                    endLng = _trackingState.value.currentLng,
+                    startLat = resolvedStartLat,
+                    startLng = resolvedStartLng,
+                    endLat = resolvedEndLat,
+                    endLng = resolvedEndLng,
                     encodedPolyline = encoded,
                     isCompleted = true
                 )
@@ -304,14 +341,30 @@ class TrackingService : Service() {
 
         val isGpsWeak = accuracy > 45f
 
-        // Set Start Location if not set yet (using first reasonably accurate fix <= 50m)
-        if ((startLat == null || startLng == null) && accuracy <= 50f) {
+        // Set Start Location if not set yet
+        if (startLat == null || startLng == null) {
             startLat = smoothedLat
             startLng = smoothedLng
             serviceScope.launch {
                 val current = tripDao.getTripById(tripId)
                 if (current != null) {
                     tripDao.updateTrip(current.copy(startLat = startLat, startLng = startLng))
+                }
+            }
+            val initialPoint = LocationPointEntity(
+                tripId = tripId,
+                latitude = smoothedLat,
+                longitude = smoothedLng,
+                altitude = location.altitude,
+                accuracy = accuracy,
+                speed = speedMps,
+                bearing = if (location.hasBearing()) location.bearing else 0f,
+                timestamp = timestamp,
+                isSegmentStart = true
+            )
+            synchronized(pendingPoints) {
+                if (pendingPoints.isEmpty()) {
+                    pendingPoints.add(initialPoint)
                 }
             }
         }

@@ -1,4 +1,4 @@
-﻿package com.zevira.app.ui.screens.auth
+package com.zevira.app.ui.screens.auth
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -152,9 +152,15 @@ fun RegisterScreen(
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                         leadingIcon = { Icon(imageVector = Icons.Rounded.Person, contentDescription = null, tint = ElectricBlue) },
+                        textStyle = androidx.compose.ui.text.TextStyle(color = TextPrimary, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold),
                         colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = TextPrimary,
+                            unfocusedTextColor = TextPrimary,
+                            focusedContainerColor = SurfaceWhite,
+                            unfocusedContainerColor = SurfaceWhite,
+                            cursorColor = ElectricBlue,
                             focusedBorderColor = ElectricBlue,
-                            unfocusedBorderColor = Color.LightGray
+                            unfocusedBorderColor = Color(0xFFCAD4E0)
                         )
                     )
                     if (username.isNotEmpty() && !isUsernameValid) {
@@ -188,9 +194,15 @@ fun RegisterScreen(
                         visualTransformation = PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                         leadingIcon = { Icon(imageVector = Icons.Rounded.Lock, contentDescription = null, tint = ElectricBlue) },
+                        textStyle = androidx.compose.ui.text.TextStyle(color = TextPrimary, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold),
                         colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = TextPrimary,
+                            unfocusedTextColor = TextPrimary,
+                            focusedContainerColor = SurfaceWhite,
+                            unfocusedContainerColor = SurfaceWhite,
+                            cursorColor = ElectricBlue,
                             focusedBorderColor = ElectricBlue,
-                            unfocusedBorderColor = Color.LightGray
+                            unfocusedBorderColor = Color(0xFFCAD4E0)
                         )
                     )
 
@@ -233,9 +245,15 @@ fun RegisterScreen(
                         visualTransformation = PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                         leadingIcon = { Icon(imageVector = Icons.Rounded.Lock, contentDescription = null, tint = ElectricBlue) },
+                        textStyle = androidx.compose.ui.text.TextStyle(color = TextPrimary, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold),
                         colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = TextPrimary,
+                            unfocusedTextColor = TextPrimary,
+                            focusedContainerColor = SurfaceWhite,
+                            unfocusedContainerColor = SurfaceWhite,
+                            cursorColor = ElectricBlue,
                             focusedBorderColor = ElectricBlue,
-                            unfocusedBorderColor = Color.LightGray
+                            unfocusedBorderColor = Color(0xFFCAD4E0)
                         )
                     )
                     if (confirmPassword.isNotEmpty() && !isPasswordMatching) {

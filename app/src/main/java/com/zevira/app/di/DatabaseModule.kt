@@ -1,4 +1,4 @@
-﻿package com.zevira.app.di
+package com.zevira.app.di
 
 import android.content.Context
 import androidx.room.Room
@@ -21,13 +21,7 @@ object DatabaseModule {
     fun provideZeviraDatabase(
         @ApplicationContext context: Context
     ): ZeviraDatabase {
-        return Room.databaseBuilder(
-            context,
-            ZeviraDatabase::class.java,
-            "zevira_database.db"
-        )
-            .fallbackToDestructiveMigration()
-            .build()
+        return ZeviraDatabase.getInstance(context)
     }
 
     @Provides

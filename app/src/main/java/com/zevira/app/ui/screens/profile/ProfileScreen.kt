@@ -182,7 +182,21 @@ fun ProfileScreen(
                         value = weightInput,
                         onValueChange = { weightInput = it },
                         modifier = Modifier.weight(1f),
-                        singleLine = true
+                        singleLine = true,
+                        textStyle = androidx.compose.ui.text.TextStyle(
+                            color = TextPrimary,
+                            fontSize = 16.sp,
+                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                        ),
+                        colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = TextPrimary,
+                            unfocusedTextColor = TextPrimary,
+                            focusedContainerColor = SurfaceWhite,
+                            unfocusedContainerColor = SurfaceWhite,
+                            cursorColor = ElectricBlue,
+                            focusedBorderColor = ElectricBlue,
+                            unfocusedBorderColor = Color(0xFFCAD4E0)
+                        )
                     )
                     CartoonButton(
                         onClick = {

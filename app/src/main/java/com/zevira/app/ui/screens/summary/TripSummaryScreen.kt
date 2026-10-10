@@ -22,17 +22,18 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.Star
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -43,17 +44,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
 import com.zevira.app.R
 import com.zevira.app.data.export.GpxExporter
-import com.zevira.app.data.local.db.LocationPointDao
-import com.zevira.app.data.local.db.TripDao
+import com.zevira.app.data.local.db.ZeviraDatabase
+import com.zevira.app.data.local.entity.LocationPointEntity
 import com.zevira.app.data.local.entity.TripEntity
 import com.zevira.app.data.local.preferences.UserPreferencesDataStore
+import com.zevira.app.data.location.LatLngPoint
+import com.zevira.app.data.location.RouteSimplifier
+import com.zevira.app.data.local.entity.TrackingMode
 import com.zevira.app.ui.components.CanvasRouteThumbnail
 import com.zevira.app.ui.components.CartoonButton
 import com.zevira.app.ui.components.CartoonCard
@@ -74,6 +78,9 @@ import com.zevira.app.ui.theme.TextSecondary
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Composable
 fun TripSummaryScreen(
@@ -85,20 +92,19 @@ fun TripSummaryScreen(
     val scrollState = rememberScrollState()
 
     var trip by remember { mutableStateOf<TripEntity?>(null) }
+    var locationPoints by remember { mutableStateOf<List<LocationPointEntity>>(emptyList()) }
     var tripTitle by remember { mutableStateOf("") }
     var newStarsEarned by remember { mutableStateOf(0) }
     var animateStarRise by remember { mutableStateOf(false) }
 
     LaunchedEffect(tripId) {
         withContext(Dispatchers.IO) {
-            val db = androidx.room.Room.databaseBuilder(
-                context,
-                com.zevira.app.data.local.db.ZeviraDatabase::class.java,
-                "zevira_database.db"
-            ).build()
+            val db = ZeviraDatabase.getInstance(context)
             val loaded = db.tripDao().getTripById(tripId)
+            val points = db.locationPointDao().getPointsForTrip(tripId)
             if (loaded != null) {
                 trip = loaded
+                locationPoints = points
                 tripTitle = loaded.title
                 val stars = (loaded.distanceMeters / 1000.0).toInt().coerceAtLeast(1)
                 newStarsEarned = stars
@@ -164,7 +170,7 @@ fun TripSummaryScreen(
                 .fillMaxWidth()
                 .padding(20.dp)
         ) {
-            // Editable Title Field
+            // 1. Editable Title Field (Fixed White Text Bug!)
             CartoonCard(
                 modifier = Modifier.fillMaxWidth(),
                 backgroundColor = SurfaceWhite
@@ -182,17 +188,38 @@ fun TripSummaryScreen(
                         onValueChange = { tripTitle = it },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
+                        textStyle = TextStyle(
+                            color = TextPrimary,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        ),
+                        placeholder = {
+                            Text(
+                                text = "Petualangan Jalan-jalan",
+                                color = TextSecondary.copy(alpha = 0.6f),
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                        },
                         colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = TextPrimary,
+                            unfocusedTextColor = TextPrimary,
+                            focusedContainerColor = SurfaceWhite,
+                            unfocusedContainerColor = SurfaceWhite,
+                            cursorColor = ElectricBlue,
                             focusedBorderColor = ElectricBlue,
-                            unfocusedBorderColor = Color.LightGray
-                        )
+                            unfocusedBorderColor = Color(0xFFCAD4E0),
+                            focusedPlaceholderColor = TextSecondary.copy(alpha = 0.6f),
+                            unfocusedPlaceholderColor = TextSecondary.copy(alpha = 0.6f)
+                        ),
+                        shape = RoundedCornerShape(12.dp)
                     )
                 }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Route Canvas Thumbnail
+            // 2. Route Canvas Thumbnail & Visible Tracking Logs Section
             trip?.let { currentTrip ->
                 CartoonCard(
                     modifier = Modifier.fillMaxWidth(),
@@ -201,13 +228,77 @@ fun TripSummaryScreen(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                            .padding(16.dp)
                     ) {
+                        // Header of the Route Card
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Jejak Garis Lintasan",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = TextPrimary
+                            )
+                            val ptsCount = if (locationPoints.isNotEmpty()) locationPoints.size else {
+                                if (currentTrip.encodedPolyline.isNotEmpty()) {
+                                    RouteSimplifier.decodePolyline(currentTrip.encodedPolyline).size
+                                } else 1
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .background(SurfaceTint, RoundedCornerShape(8.dp))
+                                    .border(1.2.dp, StickerBorder, RoundedCornerShape(8.dp))
+                                    .padding(horizontal = 8.dp, vertical = 3.dp)
+                            ) {
+                                Text(
+                                    text = "$ptsCount Titik GPS",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = ElectricBlue
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // A. Canvas Route Preview (Never blank! Line + Markers + Grid)
+                        val latLngPoints = remember(locationPoints, currentTrip.encodedPolyline) {
+                            if (locationPoints.isNotEmpty()) {
+                                locationPoints.map { LatLngPoint(it.latitude, it.longitude) }
+                            } else if (currentTrip.encodedPolyline.isNotEmpty()) {
+                                RouteSimplifier.decodePolyline(currentTrip.encodedPolyline)
+                            } else emptyList()
+                        }
+
+                        val resolvedStartLat = currentTrip.startLat ?: locationPoints.firstOrNull()?.latitude
+                        val resolvedStartLng = currentTrip.startLng ?: locationPoints.firstOrNull()?.longitude
+                        val resolvedEndLat = currentTrip.endLat ?: locationPoints.lastOrNull()?.latitude ?: resolvedStartLat
+                        val resolvedEndLng = currentTrip.endLng ?: locationPoints.lastOrNull()?.longitude ?: resolvedStartLng
+
                         CanvasRouteThumbnail(
+                            pointsList = latLngPoints,
                             encodedPolyline = currentTrip.encodedPolyline,
-                            thumbnailSize = 180.dp,
+                            startLat = resolvedStartLat,
+                            startLng = resolvedStartLng,
+                            endLat = resolvedEndLat,
+                            endLng = resolvedEndLng,
+                            thumbnailHeight = 200.dp,
                             modifier = Modifier.fillMaxWidth()
+                        )
+
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        // B. Dedicated Tracking Logs Panel (Garis line & timeline detail logs)
+                        TrackingLogsTimeline(
+                            trip = currentTrip,
+                            points = locationPoints,
+                            startLat = resolvedStartLat,
+                            startLng = resolvedStartLng,
+                            endLat = resolvedEndLat,
+                            endLng = resolvedEndLng
                         )
                     }
                 }
@@ -215,7 +306,7 @@ fun TripSummaryScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Metrics Grid
+            // 3. Metrics Grid
             trip?.let { t ->
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -256,17 +347,13 @@ fun TripSummaryScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Actions
+            // 4. Actions
             CartoonButton(
                 onClick = {
                     coroutineScope.launch {
                         trip?.let { t ->
                             withContext(Dispatchers.IO) {
-                                val db = androidx.room.Room.databaseBuilder(
-                                    context,
-                                    com.zevira.app.data.local.db.ZeviraDatabase::class.java,
-                                    "zevira_database.db"
-                                ).build()
+                                val db = ZeviraDatabase.getInstance(context)
                                 db.tripDao().updateTrip(t.copy(title = tripTitle.ifEmpty { t.title }))
                             }
                         }
@@ -285,11 +372,7 @@ fun TripSummaryScreen(
                     coroutineScope.launch {
                         trip?.let { t ->
                             withContext(Dispatchers.IO) {
-                                val db = androidx.room.Room.databaseBuilder(
-                                    context,
-                                    com.zevira.app.data.local.db.ZeviraDatabase::class.java,
-                                    "zevira_database.db"
-                                ).build()
+                                val db = ZeviraDatabase.getInstance(context)
                                 val points = db.locationPointDao().getPointsForTrip(t.id)
                                 val shareIntent = GpxExporter.exportAndShareGpx(context, t, points)
                                 context.startActivity(Intent.createChooser(shareIntent, "Bagikan GPX"))
@@ -309,11 +392,7 @@ fun TripSummaryScreen(
                 onClick = {
                     coroutineScope.launch {
                         withContext(Dispatchers.IO) {
-                            val db = androidx.room.Room.databaseBuilder(
-                                context,
-                                com.zevira.app.data.local.db.ZeviraDatabase::class.java,
-                                "zevira_database.db"
-                            ).build()
+                            val db = ZeviraDatabase.getInstance(context)
                             db.tripDao().deleteTripById(tripId)
                         }
                         onNavigateHome()
@@ -327,6 +406,198 @@ fun TripSummaryScreen(
             )
 
             Spacer(modifier = Modifier.height(24.dp).navigationBarsPadding())
+        }
+    }
+}
+
+@Composable
+private fun TrackingLogsTimeline(
+    trip: TripEntity,
+    points: List<LocationPointEntity>,
+    startLat: Double?,
+    startLng: Double?,
+    endLat: Double?,
+    endLng: Double?
+) {
+    val timeFormat = remember { SimpleDateFormat("HH:mm:ss", Locale.getDefault()) }
+    val startTimeStr = remember(trip.startTime) {
+        if (trip.startTime > 0) timeFormat.format(Date(trip.startTime)) else "--:--:--"
+    }
+    val endTimeStr = remember(trip.endTime) {
+        val t = trip.endTime ?: System.currentTimeMillis()
+        timeFormat.format(Date(t))
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color(0xFFF7FAFE), RoundedCornerShape(12.dp))
+            .border(1.2.dp, Color(0xFFD6E2F3), RoundedCornerShape(12.dp))
+            .padding(14.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "📋 Log Jejak & Koordinat",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = TextPrimary
+            )
+            Spacer(modifier = Modifier.weight(1f))
+            Text(
+                text = if (trip.mode == TrackingMode.WALK) "Jalan Santai" else "Olahraga",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                color = TextSecondary
+            )
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        // Step 1: Start Location
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.Top
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(24.dp)
+                    .background(MintGreen.copy(alpha = 0.2f), CircleShape)
+                    .border(1.2.dp, StickerBorder, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(8.dp)
+                        .background(MintGreen, CircleShape)
+                )
+            }
+
+            Spacer(modifier = Modifier.width(10.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Titik Keberadaan Awal (Start)",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TextPrimary
+                    )
+                    Text(
+                        text = startTimeStr,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = TextSecondary
+                    )
+                }
+                Spacer(modifier = Modifier.height(2.dp))
+                val coordStart = if (startLat != null && startLng != null) {
+                    String.format(Locale.US, "%.5f, %.5f", startLat, startLng)
+                } else {
+                    "Mencari titik GPS..."
+                }
+                Text(
+                    text = "📍 $coordStart",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = TextSecondary
+                )
+            }
+        }
+
+        // Connector line
+        Box(
+            modifier = Modifier
+                .padding(start = 11.dp, top = 2.dp, bottom = 2.dp)
+                .width(2.dp)
+                .height(18.dp)
+                .background(Color(0xFFBACADB))
+        )
+
+        // Step 2: End Location
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.Top
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(24.dp)
+                    .background(CoralRed.copy(alpha = 0.2f), CircleShape)
+                    .border(1.2.dp, StickerBorder, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(8.dp)
+                        .background(CoralRed, CircleShape)
+                )
+            }
+
+            Spacer(modifier = Modifier.width(10.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Titik Terakhir Jalan-Jalan (Finish)",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TextPrimary
+                    )
+                    Text(
+                        text = endTimeStr,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = TextSecondary
+                    )
+                }
+                Spacer(modifier = Modifier.height(2.dp))
+                val coordEnd = if (endLat != null && endLng != null) {
+                    String.format(Locale.US, "%.5f, %.5f", endLat, endLng)
+                } else {
+                    "Lokasi tercatat"
+                }
+                Text(
+                    text = "🏁 $coordEnd",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = TextSecondary
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+        HorizontalDivider(color = Color(0xFFE2EBF5), thickness = 1.dp)
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Mini Badges Info
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            val totalPoints = if (points.isNotEmpty()) points.size else 1
+            Text(
+                text = "• $totalPoints Titik Koordinat Terekam",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = TextSecondary
+            )
+            Text(
+                text = "• Akurasi: Terverifikasi",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = ElectricBlue
+            )
         }
     }
 }

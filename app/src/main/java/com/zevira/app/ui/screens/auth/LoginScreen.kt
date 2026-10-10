@@ -1,4 +1,4 @@
-﻿package com.zevira.app.ui.screens.auth
+package com.zevira.app.ui.screens.auth
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -151,9 +151,15 @@ fun LoginScreen(
                         leadingIcon = {
                             Icon(imageVector = Icons.Rounded.Person, contentDescription = null, tint = ElectricBlue)
                         },
+                        textStyle = androidx.compose.ui.text.TextStyle(color = TextPrimary, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold),
                         colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = TextPrimary,
+                            unfocusedTextColor = TextPrimary,
+                            focusedContainerColor = SurfaceWhite,
+                            unfocusedContainerColor = SurfaceWhite,
+                            cursorColor = ElectricBlue,
                             focusedBorderColor = ElectricBlue,
-                            unfocusedBorderColor = Color.LightGray
+                            unfocusedBorderColor = Color(0xFFCAD4E0)
                         )
                     )
                 }
@@ -196,9 +202,15 @@ fun LoginScreen(
                                 )
                             }
                         },
+                        textStyle = androidx.compose.ui.text.TextStyle(color = TextPrimary, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold),
                         colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = TextPrimary,
+                            unfocusedTextColor = TextPrimary,
+                            focusedContainerColor = SurfaceWhite,
+                            unfocusedContainerColor = SurfaceWhite,
+                            cursorColor = ElectricBlue,
                             focusedBorderColor = ElectricBlue,
-                            unfocusedBorderColor = Color.LightGray
+                            unfocusedBorderColor = Color(0xFFCAD4E0)
                         )
                     )
                 }

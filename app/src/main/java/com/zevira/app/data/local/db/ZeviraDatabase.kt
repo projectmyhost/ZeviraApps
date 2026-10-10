@@ -1,4 +1,4 @@
-﻿package com.zevira.app.data.local.db
+package com.zevira.app.data.local.db
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
@@ -18,4 +18,22 @@ import com.zevira.app.data.local.entity.TripEntity
 abstract class ZeviraDatabase : RoomDatabase() {
     abstract fun tripDao(): TripDao
     abstract fun locationPointDao(): LocationPointDao
+
+    companion object {
+        @Volatile
+        private var INSTANCE: ZeviraDatabase? = null
+
+        fun getInstance(context: android.content.Context): ZeviraDatabase {
+            return INSTANCE ?: synchronized(this) {
+                INSTANCE ?: androidx.room.Room.databaseBuilder(
+                    context.applicationContext,
+                    ZeviraDatabase::class.java,
+                    "zevira_database.db"
+                )
+                    .fallbackToDestructiveMigration()
+                    .build()
+                    .also { INSTANCE = it }
+            }
+        }
+    }
 }
