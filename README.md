@@ -1,6 +1,6 @@
-# Navira – Travel Tracker Android
+﻿# Zevira – Travel Tracker Android
 
-**Navira** adalah aplikasi pencatat perjalanan realtime bergaya *cartoon sticker* untuk Gen Z. Aplikasi ini mencatat koordinat titik awal secara otomatis begitu pelacakan diaktifkan, memplot rute di atas peta Leaflet, menghitung jarak tempuh realtime, kompas, serta menyediakan fitur unggulan **Pulang ke Start** agar penjelajah tidak tersesat kembali ke titik awal.
+**Zevira** adalah aplikasi pencatat perjalanan realtime bergaya *cartoon sticker* untuk Gen Z. Aplikasi ini mencatat koordinat titik awal secara otomatis begitu pelacakan diaktifkan, memplot rute di atas peta Leaflet, menghitung jarak tempuh realtime, kompas, serta menyediakan fitur unggulan **Pulang ke Start** agar penjelajah tidak tersesat kembali ke titik awal.
 
 ---
 
@@ -81,10 +81,10 @@ Output AAB siap upload ke Google Play berada di `app/build/outputs/bundle/releas
 ## Struktur Proyek
 
 ```
-NaviraProject/
+ZeviraProject/
 ├── app/
 │   ├── src/main/
-│   │   ├── java/com/navira/app/
+│   │   ├── java/com/zevira/app/
 │   │   │   ├── data/
 │   │   │   │   ├── export/      # GPX 1.1 Exporter
 │   │   │   │   ├── local/       # Room Database, DAOs, Entities, DataStore
@@ -93,10 +93,10 @@ NaviraProject/
 │   │   │   ├── di/              # Hilt DI Modules
 │   │   │   ├── ui/
 │   │   │   │   ├── components/  # CartoonCard, CartoonButton, MascotJejak, StarSky, CanvasRouteThumbnail
-│   │   │   │   ├── navigation/  # NavRoute, BottomTab, NaviraNavGraph
+│   │   │   │   ├── navigation/  # NavRoute, BottomTab, ZeviraNavGraph
 │   │   │   │   ├── screens/     # Dashboard, TrackingLive, ReturnToStart, Compass, History, Detail, Summary, Auth, Profile
-│   │   │   │   └── theme/       # Color tokens, Typography, Shapes, NaviraTheme
-│   │   │   └── NaviraApp.kt
+│   │   │   │   └── theme/       # Color tokens, Typography, Shapes, ZeviraTheme
+│   │   │   └── ZeviraApp.kt
 │   │   ├── assets/map/          # Leaflet.js, leaflet.css, map.html (Offline Bundle)
 │   │   └── res/                 # Vector drawables, strings (Indonesian), colors, themes
 │   └── build.gradle.kts

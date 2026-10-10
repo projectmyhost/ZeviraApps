@@ -1,4 +1,4 @@
-# Navira ProGuard / R8 Rules
+﻿# Zevira ProGuard / R8 Rules
 
 # Strip Timber logs in release build
 -assumenosideeffects class timber.log.Timber {

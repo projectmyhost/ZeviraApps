@@ -1,6 +1,6 @@
-# Panduan Konfigurasi Firebase untuk Navira
+﻿# Panduan Konfigurasi Firebase untuk Zevira
 
-Aplikasi **Navira** dirancang dengan arsitektur **Offline-First**. Anda dapat langsung mengompilasi dan menjalankan aplikasi dalam mode **Tamu** atau **Demo** di HP/emulator tanpa Firebase terlebih dahulu.
+Aplikasi **Zevira** dirancang dengan arsitektur **Offline-First**. Anda dapat langsung mengompilasi dan menjalankan aplikasi dalam mode **Tamu** atau **Demo** di HP/emulator tanpa Firebase terlebih dahulu.
 
 Jika ingin mengaktifkan sinkronisasi cloud, autentikasi Member, dan App Check, ikuti langkah-langkah di bawah ini.
 
@@ -9,10 +9,10 @@ Jika ingin mengaktifkan sinkronisasi cloud, autentikasi Member, dan App Check, i
 ## 1. Buat Project di Firebase Console
 
 1. Buka [Firebase Console](https://console.firebase.google.com/).
-2. Buat project baru bernama `Navira` (atau nama pilihan Anda).
+2. Buat project baru bernama `Zevira` (atau nama pilihan Anda).
 3. Daftarkan aplikasi Android baru dengan package name:
    ```
-   com.navira.app
+   com.zevira.app
    ```
 4. Tambahkan **SHA-1** dan **SHA-256** dari keystore debug / release Anda:
    - Untuk debug keystore di Windows:
@@ -21,7 +21,7 @@ Jika ingin mengaktifkan sinkronisasi cloud, autentikasi Member, dan App Check, i
      ```
 5. Unduh file `google-services.json` dan letakkan di dalam folder `app/`:
    ```
-   NaviraProject/app/google-services.json
+   ZeviraProject/app/google-services.json
    ```
    *(File ini sudah dimasukkan ke `.gitignore` agar tidak bocor ke publik).*
 
@@ -32,7 +32,7 @@ Jika ingin mengaktifkan sinkronisasi cloud, autentikasi Member, dan App Check, i
 Masuk ke menu **Build > Authentication > Sign-in method**:
 
 1. **Anonymous**: Aktifkan (digunakan untuk sesi akun Demo unik per perangkat).
-2. **Email/Password**: Aktifkan (digunakan untuk registrasi dan login username internal Navira).
+2. **Email/Password**: Aktifkan (digunakan untuk registrasi dan login username internal Zevira).
 3. **Google**: Aktifkan.
    - Salin **Web Client ID** yang dihasilkan untuk konfigurasi Credential Manager.
 
@@ -52,7 +52,7 @@ Masuk ke menu **Build > Authentication > Sign-in method**:
 ## 4. Aktifkan App Check (Play Integrity)
 
 1. Masuk ke menu **Build > App Check**.
-2. Daftarkan aplikasi `com.navira.app` dengan provider **Play Integrity**.
+2. Daftarkan aplikasi `com.zevira.app` dengan provider **Play Integrity**.
 3. Enforce App Check untuk Cloud Firestore dan Authentication guna melindungi kuota dan mencegah penyalahgunaan API.
 
 ---

@@ -1,5 +1,5 @@
-<resources>
-    <string name="app_name">Navira</string>
+﻿<resources>
+    <string name="app_name">Zevira</string>
     <string name="tagline">Pencatat Perjalanan Realtime</string>
 
     <!-- Bottom Nav -->
@@ -29,7 +29,7 @@
     <string name="btn_login_register">Login / Daftar</string>
     <string name="btn_try_demo">Coba Akun Demo</string>
     <string name="demo_mode_banner">Mode Demo: datamu tidak tersimpan permanen.</string>
-    <string name="btn_upgrade_account">Simpan Navira (Jadikan Akun Asli)</string>
+    <string name="btn_upgrade_account">Simpan Zevira (Jadikan Akun Asli)</string>
     <string name="gateway_sheet_title">Pilih Mode Masuk</string>
     <string name="gateway_sheet_desc">Untuk merekam jejak perjalanan, pilih login akun atau gunakan akun demo sementara.</string>
     <string name="gateway_demo_warning">Akun demo hanya menyimpan data di perangkat ini dan terbatas 5 trip.</string>
@@ -47,7 +47,7 @@
 
     <!-- Permission Primer -->
     <string name="permission_primer_title">Izin yang Dibutuhkan</string>
-    <string name="permission_primer_desc">Navira butuh beberapa izin agar bisa merekam rute perjalananmu dengan akurat dan hemat daya.</string>
+    <string name="permission_primer_desc">Zevira butuh beberapa izin agar bisa merekam rute perjalananmu dengan akurat dan hemat daya.</string>
     <string name="perm_loc_title">Lokasi Akurat</string>
     <string name="perm_loc_desc">Diperlukan untuk merekam jejak rute perjalananmu di peta secara realtime.</string>
     <string name="perm_bg_loc_title">Lokasi Latar Belakang</string>
@@ -108,7 +108,7 @@
     <string name="action_undo">BATAL</string>
 
     <!-- Auth -->
-    <string name="login_title">Masuk ke Navira</string>
+    <string name="login_title">Masuk ke Zevira</string>
     <string name="register_title">Daftar Akun Baru</string>
     <string name="label_username">Username</string>
     <string name="label_password">Kata Sandi</string>

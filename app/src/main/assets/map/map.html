@@ -1,10 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://appassets.androidplatform.net; img-src 'self' data: https://server.arcgisonline.com https://*.arcgisonline.com https://appassets.androidplatform.net; style-src 'self' 'unsafe-inline' https://appassets.androidplatform.net; script-src 'self' 'unsafe-inline' https://appassets.androidplatform.net;" />
-    <title>Navira Map</title>
+    <title>Zevira Map</title>
     <link rel="stylesheet" href="leaflet.css" />
     <style>
         html, body, #map {
@@ -83,7 +83,7 @@
         var currentLat = 0;
         var currentLng = 0;
 
-        function initNaviraMap(startLat, startLng, style) {
+        function initZeviraMap(startLat, startLng, style) {
             currentMapStyle = style || "real_life";
             currentLat = startLat || -6.2088;
             currentLng = startLng || 106.8456;
@@ -123,13 +123,13 @@
             // User pan listener stops auto-follow
             map.on('dragstart', function() {
                 autoFollow = false;
-                if (window.NaviraBridge && window.NaviraBridge.onUserPan) {
-                    window.NaviraBridge.onUserPan();
+                if (window.ZeviraBridge && window.ZeviraBridge.onUserPan) {
+                    window.ZeviraBridge.onUserPan();
                 }
             });
 
-            if (window.NaviraBridge && window.NaviraBridge.onMapReady) {
-                window.NaviraBridge.onMapReady();
+            if (window.ZeviraBridge && window.ZeviraBridge.onMapReady) {
+                window.ZeviraBridge.onMapReady();
             }
         }
 

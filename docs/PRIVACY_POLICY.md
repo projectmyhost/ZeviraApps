@@ -1,18 +1,18 @@
-# Kebijakan Privasi - Navira (Travel Tracker Android)
+﻿# Kebijakan Privasi - Zevira (Travel Tracker Android)
 
 **Tanggal Berlaku:** 10 Oktober 2026  
 **Versi:** 1.0.0
 
-Privasi Anda sangat penting bagi kami. Kebijakan Privasi ini menjelaskan bagaimana **Navira** ("kami") mengumpulkan, menggunakan, menyimpan, dan melindungi data pribadi Anda saat menggunakan aplikasi mobile Navira di platform Android.
+Privasi Anda sangat penting bagi kami. Kebijakan Privasi ini menjelaskan bagaimana **Zevira** ("kami") mengumpulkan, menggunakan, menyimpan, dan melindungi data pribadi Anda saat menggunakan aplikasi mobile Zevira di platform Android.
 
 ---
 
 ## 1. Data yang Kami Kumpulkan
 
 ### A. Data Lokasi (Foreground & Background)
-- **Lokasi Presisi (GPS):** Navira mengumpulkan data koordinat latitude, longitude, kecepatan, dan akurasi perangkat Anda.
-- **Lokasi Latar Belakang (Background Location):** Navira memerlukan izin akses lokasi latar belakang agar pelacakan rute perjalanan Anda tetap dapat berjalan saat layar mati atau saat aplikasi berada di latar belakang.
-- **Batasan Pengumpulan:** Navira **HANYA** mengakses dan mengumpulkan data lokasi saat Anda secara sengaja menekan tombol **Mulai (GO)** dan akan segera berhenti ketika sesi tracking dihentikan (Stop). Kami **TIDAK PERNAH** melacak keberadaan Anda di luar sesi tracking aktif.
+- **Lokasi Presisi (GPS):** Zevira mengumpulkan data koordinat latitude, longitude, kecepatan, dan akurasi perangkat Anda.
+- **Lokasi Latar Belakang (Background Location):** Zevira memerlukan izin akses lokasi latar belakang agar pelacakan rute perjalanan Anda tetap dapat berjalan saat layar mati atau saat aplikasi berada di latar belakang.
+- **Batasan Pengumpulan:** Zevira **HANYA** mengakses dan mengumpulkan data lokasi saat Anda secara sengaja menekan tombol **Mulai (GO)** dan akan segera berhenti ketika sesi tracking dihentikan (Stop). Kami **TIDAK PERNAH** melacak keberadaan Anda di luar sesi tracking aktif.
 
 ### B. Informasi Akun
 - **Mode Tamu / Demo:** Tidak memerlukan email atau identitas pribadi. Akun Demo menggunakan ID anonim unik acak yang disimpan secara lokal di perangkat Anda.
@@ -52,5 +52,5 @@ Sesuai dengan ketentuan Google Play dan regulasi perlindungan data:
 ## 5. Kontak Kami
 
 Jika Anda memiliki pertanyaan mengenai Kebijakan Privasi ini, silakan hubungi tim kami di:
-- **Email:** support@navira-app.example
-- **Pengembang:** Tim Pengembang Navira
+- **Email:** support@zevira-app.example
+- **Pengembang:** Tim Pengembang Zevira

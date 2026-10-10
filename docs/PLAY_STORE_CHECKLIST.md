@@ -1,6 +1,6 @@
-# Google Play Store Release Checklist - Navira
+﻿# Google Play Store Release Checklist - Zevira
 
-Dokumen ini memuat panduan lengkap, teks justifikasi izin sensitif, dan pengisian Data Safety Form untuk submission aplikasi Navira ke Google Play Console.
+Dokumen ini memuat panduan lengkap, teks justifikasi izin sensitif, dan pengisian Data Safety Form untuk submission aplikasi Zevira ke Google Play Console.
 
 ---
 
@@ -12,7 +12,7 @@ Google Play mewajibkan justifikasi tertulis serta video demonstrasi untuk penggu
 
 > **Fitur Inti:** Pelacakan rute perjalanan dan aktivitas olahraga realtime (*continuous travel tracking*).  
 > **Mengapa Dibutuhkan di Latar Belakang:**  
-> Navira adalah aplikasi pencatat jejak perjalanan di mana pengguna berjalan kaki, berlari, atau bersepeda dalam durasi lama dengan layar ponsel dimatikan untuk menghemat daya baterai, atau saat pengguna membuka aplikasi lain (seperti kamera untuk mengambil foto). Tanpa akses lokasi latar belakang, rekaman rute GPS akan terputus dan perhitungan jarak tempuh menjadi tidak akurat. Pengumpulan lokasi HANYA aktif saat pengguna secara sadar menekan tombol "Mulai" dan diiringi notifikasi Foreground Service permanen yang menyertakan tombol kontrol Jeda dan Berhenti.
+> Zevira adalah aplikasi pencatat jejak perjalanan di mana pengguna berjalan kaki, berlari, atau bersepeda dalam durasi lama dengan layar ponsel dimatikan untuk menghemat daya baterai, atau saat pengguna membuka aplikasi lain (seperti kamera untuk mengambil foto). Tanpa akses lokasi latar belakang, rekaman rute GPS akan terputus dan perhitungan jarak tempuh menjadi tidak akurat. Pengumpulan lokasi HANYA aktif saat pengguna secara sadar menekan tombol "Mulai" dan diiringi notifikasi Foreground Service permanen yang menyertakan tombol kontrol Jeda dan Berhenti.
 
 ### Video Demonstrasi untuk Peninjau Google Play:
 1. Rekam layar saat aplikasi dibuka pertama kali (tampilan Permission Primer kartun).

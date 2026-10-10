@@ -1,6 +1,6 @@
-# Rekam Keputusan Arsitektur & Desain (DECISIONS.md) - Navira
+﻿# Rekam Keputusan Arsitektur & Desain (DECISIONS.md) - Zevira
 
-Dokumen ini mencatat setiap keputusan teknis yang diambil selama implementasi Navira (Travel Tracker Android) untuk memastikan transparansi, pemeliharaan jangka panjang, dan kepatuhan terhadap PRD.
+Dokumen ini mencatat setiap keputusan teknis yang diambil selama implementasi Zevira (Travel Tracker Android) untuk memastikan transparansi, pemeliharaan jangka panjang, dan kepatuhan terhadap PRD.
 
 ---
 
