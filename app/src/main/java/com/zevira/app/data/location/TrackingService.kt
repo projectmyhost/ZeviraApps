@@ -195,12 +195,12 @@ class TrackingService : Service() {
                 startLat = startLat,
                 startLng = startLng
             )
-        }
 
-        startForegroundWithNotification()
-        requestLocationUpdates()
-        startTimer()
-        startBatchSaver()
+            requestLocationUpdates()
+            fetchInitialLocation()
+            startTimer()
+            startBatchSaver()
+        }
     }
 
     private fun pauseTracking() {
@@ -267,9 +267,8 @@ class TrackingService : Service() {
         val speedMps = if (location.hasSpeed()) location.speed else 0f
         val timestamp = location.time
 
-        // 1. Filter out unacceptable accuracy
-        val maxAccuracy = if (trackingMode == TrackingMode.WALK) 30f else 20f
-        if (accuracy > maxAccuracy) {
+        // 1. Extreme outlier check: ignore if accuracy > 100m or non-positive
+        if (accuracy > 100f || accuracy <= 0f) {
             _trackingState.value = _trackingState.value.copy(isGpsWeak = true)
             return
         }
@@ -278,10 +277,10 @@ class TrackingService : Service() {
         val maxAllowedSpeedMps = when (trackingMode) {
             TrackingMode.WALK -> 60f
             TrackingMode.SPORT -> when (sportActivity) {
-                SportActivity.WALK -> 4f
-                SportActivity.RUN -> 10f
-                SportActivity.CYCLE -> 20f
-                SportActivity.NONE -> 30f
+                SportActivity.WALK -> 6f
+                SportActivity.RUN -> 12f
+                SportActivity.CYCLE -> 25f
+                SportActivity.NONE -> 35f
             }
         }
         if (speedMps > maxAllowedSpeedMps) {
@@ -296,8 +295,10 @@ class TrackingService : Service() {
             timestampMs = timestamp
         )
 
-        // Set Start Location if not set yet
-        if (startLat == null || startLng == null) {
+        val isGpsWeak = accuracy > 45f
+
+        // Set Start Location if not set yet (using first reasonably accurate fix <= 50m)
+        if ((startLat == null || startLng == null) && accuracy <= 50f) {
             startLat = smoothedLat
             startLng = smoothedLng
             serviceScope.launch {
@@ -308,32 +309,59 @@ class TrackingService : Service() {
             }
         }
 
-        // 4. Segment Gap Check: if time gap > 30s, start new segment without adding fake line/distance
-        val isSegmentGap = lastAcceptedTimestampMs > 0 && (timestamp - lastAcceptedTimestampMs > 30000L)
+        // Only accumulate distance & save polyline points if fix is not weak
+        if (!isGpsWeak) {
+            // 4. Segment Gap Check: if time gap > 30s, start new segment without adding fake line/distance
+            val isSegmentGap = lastAcceptedTimestampMs > 0 && (timestamp - lastAcceptedTimestampMs > 30000L)
 
-        // 5. Distance Accumulation
-        var stepDistanceMeters = 0.0
-        val lastLoc = lastAcceptedLocation
-        if (lastLoc != null && !isSegmentGap) {
-            val results = FloatArray(1)
-            Location.distanceBetween(
-                lastLoc.latitude, lastLoc.longitude,
-                smoothedLat, smoothedLng,
-                results
+            // 5. Distance Accumulation
+            val lastLoc = lastAcceptedLocation
+            if (lastLoc != null && !isSegmentGap) {
+                val results = FloatArray(1)
+                Location.distanceBetween(
+                    lastLoc.latitude, lastLoc.longitude,
+                    smoothedLat, smoothedLng,
+                    results
+                )
+                val d = results[0].toDouble()
+                // Only add distance if moving (speed >= 0.3 m/s or displacement > 3m)
+                if (speedMps >= 0.3f || d > 3.0) {
+                    distanceMeters += d
+                }
+            }
+
+            val speedKmh = speedMps * 3.6
+            if (speedKmh > maxSpeedKmh) {
+                maxSpeedKmh = speedKmh
+            }
+
+            lastAcceptedLocation = Location("kalman").apply {
+                this.latitude = smoothedLat
+                this.longitude = smoothedLng
+                this.accuracy = accuracy
+            }
+            lastAcceptedTimestampMs = timestamp
+
+            pointsCount++
+
+            val pointEntity = LocationPointEntity(
+                tripId = tripId,
+                latitude = smoothedLat,
+                longitude = smoothedLng,
+                altitude = location.altitude,
+                accuracy = accuracy,
+                speed = speedMps,
+                bearing = if (location.hasBearing()) location.bearing else 0f,
+                timestamp = timestamp,
+                isSegmentStart = isSegmentGap
             )
-            val d = results[0].toDouble()
-            // Only add distance if moving (speed >= 0.5 m/s or displacement > accuracy threshold)
-            if (speedMps >= 0.5f || d > accuracy) {
-                stepDistanceMeters = d
-                distanceMeters += stepDistanceMeters
+
+            synchronized(pendingPoints) {
+                pendingPoints.add(pointEntity)
             }
         }
 
-        // Speed in km/h
         val speedKmh = speedMps * 3.6
-        if (speedKmh > maxSpeedKmh) {
-            maxSpeedKmh = speedKmh
-        }
 
         // Dynamic Calories
         val calories = CalorieCalculator.calculateCalories(
@@ -343,34 +371,10 @@ class TrackingService : Service() {
             durationSeconds = movingDurationSeconds
         )
 
-        lastAcceptedLocation = Location("kalman").apply {
-            this.latitude = smoothedLat
-            this.longitude = smoothedLng
-            this.accuracy = accuracy
-        }
-        lastAcceptedTimestampMs = timestamp
-
-        pointsCount++
-
-        val pointEntity = LocationPointEntity(
-            tripId = tripId,
-            latitude = smoothedLat,
-            longitude = smoothedLng,
-            altitude = location.altitude,
-            accuracy = accuracy,
-            speed = speedMps,
-            bearing = if (location.hasBearing()) location.bearing else 0f,
-            timestamp = timestamp,
-            isSegmentStart = isSegmentGap
-        )
-
-        synchronized(pendingPoints) {
-            pendingPoints.add(pointEntity)
-        }
-
+        // Always update trackingState coordinates so map blue dot tracks accurately!
         _trackingState.value = _trackingState.value.copy(
             isSearchingGps = false,
-            isGpsWeak = false,
+            isGpsWeak = isGpsWeak,
             currentLat = smoothedLat,
             currentLng = smoothedLng,
             currentAccuracy = accuracy,
@@ -424,10 +428,18 @@ class TrackingService : Service() {
             pointsToSave = ArrayList(pendingPoints)
             pendingPoints.clear()
         }
-        locationPointDao.insertPoints(pointsToSave)
-        // Also checkpoint trip metrics in Room
+
         val existing = tripDao.getTripById(tripId)
-        if (existing != null) {
+        if (existing == null) {
+            Timber.w("flushPendingPoints: Trip $tripId not yet in DB, deferring points flush")
+            synchronized(pendingPoints) {
+                pendingPoints.addAll(0, pointsToSave)
+            }
+            return
+        }
+
+        try {
+            locationPointDao.insertPoints(pointsToSave)
             tripDao.updateTrip(
                 existing.copy(
                     distanceMeters = distanceMeters,
@@ -437,14 +449,35 @@ class TrackingService : Service() {
                     maxSpeedKmh = maxSpeedKmh
                 )
             )
+        } catch (e: Exception) {
+            Timber.e(e, "Error saving batch location points")
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun fetchInitialLocation() {
+        try {
+            fusedLocationClient.lastLocation.addOnSuccessListener { loc ->
+                if (loc != null && _trackingState.value.currentLat == null) {
+                    processNewLocation(loc)
+                }
+            }
+            fusedLocationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null)
+                .addOnSuccessListener { loc ->
+                    if (loc != null) {
+                        processNewLocation(loc)
+                    }
+                }
+        } catch (e: SecurityException) {
+            Timber.e(e, "SecurityException fetching initial location")
         }
     }
 
     @SuppressLint("MissingPermission")
     private fun requestLocationUpdates() {
-        val intervalMs = if (trackingMode == TrackingMode.WALK) 4000L else 1500L
-        val minIntervalMs = if (trackingMode == TrackingMode.WALK) 2000L else 1000L
-        val minDistanceM = if (trackingMode == TrackingMode.WALK) 5f else 2f
+        val intervalMs = if (trackingMode == TrackingMode.WALK) 2000L else 1000L
+        val minIntervalMs = 1000L
+        val minDistanceM = 0f
 
         val request = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, intervalMs)
             .setMinUpdateIntervalMillis(minIntervalMs)

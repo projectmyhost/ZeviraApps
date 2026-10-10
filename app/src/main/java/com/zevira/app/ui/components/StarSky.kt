@@ -1,4 +1,4 @@
-﻿package com.zevira.app.ui.components
+package com.zevira.app.ui.components
 
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -95,7 +95,7 @@ fun StarSky(
     Box(modifier = modifier) {
         Canvas(
             modifier = Modifier
-                .fillMaxSize()
+                .matchParentSize()
                 .pointerInput(Unit) {
                     detectTapGestures(
                         onPress = { offset ->

@@ -23,8 +23,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -39,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.zevira.app.ui.theme.CartoonBadgeShape
 import com.zevira.app.ui.theme.CartoonCardShape
+import com.zevira.app.ui.theme.CoralRed
 import com.zevira.app.ui.theme.ElectricBlue
 import com.zevira.app.ui.theme.PillShape
 import com.zevira.app.ui.theme.StickerBorder
@@ -56,7 +62,10 @@ fun CartoonCard(
     shadowOffset: Dp = 4.dp,
     content: @Composable () -> Unit
 ) {
-    Box(modifier = modifier.padding(bottom = shadowOffset)) {
+    Box(
+        modifier = modifier.padding(bottom = shadowOffset),
+        propagateMinConstraints = true
+    ) {
         // Solid offset shadow
         Box(
             modifier = Modifier
@@ -67,7 +76,6 @@ fun CartoonCard(
         // Top Card Surface
         Box(
             modifier = Modifier
-                .fillMaxWidth()
                 .background(backgroundColor, shape)
                 .border(borderWidth, borderColor, shape)
                 .clip(shape)
@@ -113,7 +121,8 @@ fun CartoonButton(
             ) {
                 view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
                 onClick()
-            }
+            },
+        propagateMinConstraints = true
     ) {
         // Solid bottom shadow
         if (enabled) {
@@ -128,7 +137,6 @@ fun CartoonButton(
         // Top button element
         Box(
             modifier = Modifier
-                .fillMaxWidth()
                 .defaultMinSize(minHeight = 44.dp)
                 .offset(y = currentOffset.dp)
                 .background(if (enabled) backgroundColor else Color.LightGray, shape)
@@ -167,40 +175,91 @@ fun CartoonHoldButton(
     onHoldComplete: () -> Unit,
     modifier: Modifier = Modifier,
     text: String,
-    backgroundColor: Color = ElectricBlue,
+    backgroundColor: Color = CoralRed,
     contentColor: Color = SurfaceWhite,
     borderColor: Color = StickerBorder,
     shadowColor: Color = StickerBorder,
     shape: Shape = PillShape,
-    holdDurationMs: Long = 1500L
+    borderWidth: Dp = 2.dp,
+    shadowOffset: Dp = 4.dp,
+    holdDurationMs: Long = 1200L
 ) {
     val view = LocalView.current
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
+    var isHolding by remember { mutableStateOf(false) }
+    var holdProgress by remember { mutableFloatStateOf(0f) }
+
+    LaunchedEffect(isHolding) {
+        if (isHolding) {
+            val startTime = System.currentTimeMillis()
+            while (isHolding) {
+                val elapsed = System.currentTimeMillis() - startTime
+                holdProgress = (elapsed.toFloat() / holdDurationMs).coerceIn(0f, 1f)
+                if (elapsed >= holdDurationMs) {
+                    view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                    isHolding = false
+                    holdProgress = 0f
+                    onHoldComplete()
+                    break
+                }
+                delay(16L)
+            }
+        } else {
+            holdProgress = 0f
+        }
+    }
 
     Box(
         modifier = modifier
-            .defaultMinSize(minHeight = 48.dp)
+            .padding(bottom = shadowOffset)
             .pointerInput(Unit) {
                 detectTapGestures(
                     onPress = {
-                        view.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
-                        val completed = tryAwaitRelease()
-                        // Handle tap vs hold
+                        isHolding = true
+                        view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+                        tryAwaitRelease()
+                        isHolding = false
                     }
                 )
-            }
+            },
+        propagateMinConstraints = true
     ) {
-        // Normal state or pressing state
-        CartoonButton(
-            onClick = onHoldComplete,
-            text = text,
-            backgroundColor = backgroundColor,
-            contentColor = contentColor,
-            borderColor = borderColor,
-            shadowColor = shadowColor,
-            shape = shape
+        // Bottom Shadow
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .offset(x = 0.dp, y = shadowOffset)
+                .background(shadowColor, shape)
         )
+
+        // Top Button Surface
+        Box(
+            modifier = Modifier
+                .defaultMinSize(minHeight = 44.dp)
+                .offset(y = if (isHolding) shadowOffset else 0.dp)
+                .background(backgroundColor, shape)
+                .border(borderWidth, borderColor, shape)
+                .clip(shape)
+                .padding(horizontal = 14.dp, vertical = 10.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            // Visual hold progress indicator
+            if (isHolding) {
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .background(Color.White.copy(alpha = 0.35f))
+                )
+            }
+
+            Text(
+                text = if (isHolding) "Tahan... (${(holdProgress * 100).toInt()}%)" else text,
+                color = contentColor,
+                fontWeight = FontWeight.Bold,
+                fontSize = 14.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
     }
 }
 

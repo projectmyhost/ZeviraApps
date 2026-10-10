@@ -56,6 +56,7 @@ import com.zevira.app.data.sensor.CompassSensorManager
 import com.zevira.app.ui.components.CartoonButton
 import com.zevira.app.ui.components.CartoonCard
 import com.zevira.app.ui.components.CartoonChip
+import com.zevira.app.ui.components.CartoonHoldButton
 import com.zevira.app.ui.theme.CoralRed
 import android.Manifest
 import android.content.pm.PackageManager
@@ -112,6 +113,25 @@ fun TrackingLiveScreen(
         }
     }
 
+    var initialLat by remember { mutableStateOf<Double?>(null) }
+    var initialLng by remember { mutableStateOf<Double?>(null) }
+
+    LaunchedEffect(hasLocationPermission) {
+        if (hasLocationPermission && initialLat == null) {
+            try {
+                val fusedClient = com.google.android.gms.location.LocationServices.getFusedLocationProviderClient(context)
+                fusedClient.lastLocation.addOnSuccessListener { loc ->
+                    if (loc != null && initialLat == null) {
+                        initialLat = loc.latitude
+                        initialLng = loc.longitude
+                    }
+                }
+            } catch (e: SecurityException) {
+                // Handled gracefully
+            }
+        }
+    }
+
     // Start Tracking Service ONLY when location permission is granted
     LaunchedEffect(hasLocationPermission) {
         if (hasLocationPermission && !trackingState.isTracking) {
@@ -141,8 +161,8 @@ fun TrackingLiveScreen(
         // 1. Fullscreen Leaflet Map
         LeafletMapView(
             modifier = Modifier.fillMaxSize(),
-            currentLat = trackingState.currentLat,
-            currentLng = trackingState.currentLng,
+            currentLat = trackingState.currentLat ?: initialLat,
+            currentLng = trackingState.currentLng ?: initialLng,
             currentAccuracy = trackingState.currentAccuracy,
             currentBearing = trackingState.currentBearing,
             startLat = trackingState.startLat,
@@ -392,41 +412,18 @@ fun TrackingLiveScreen(
                     )
 
                     // Long-Press Stop Button (Section 5: "Tombol Stop harus ditahan (long-press) agar tidak tertekan tidak sengaja")
-                    var isPressingStop by remember { mutableStateOf(false) }
-
-                    LaunchedEffect(isPressingStop) {
-                        if (isPressingStop) {
-                            delay(1200L) // Long-press threshold
-                            if (isPressingStop) {
-                                val stopIntent = Intent(context, TrackingService::class.java).apply {
-                                    action = TrackingService.ACTION_STOP
-                                }
-                                context.startService(stopIntent)
+                    CartoonHoldButton(
+                        onHoldComplete = {
+                            val stopIntent = Intent(context, TrackingService::class.java).apply {
+                                action = TrackingService.ACTION_STOP
                             }
-                        }
-                    }
-
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .pointerInput(Unit) {
-                                detectTapGestures(
-                                    onPress = {
-                                        isPressingStop = true
-                                        tryAwaitRelease()
-                                        isPressingStop = false
-                                    }
-                                )
-                            }
-                    ) {
-                        CartoonButton(
-                            onClick = { /* handled by long-press */ },
-                            text = if (isPressingStop) "Tahan..." else stringResource(R.string.btn_stop_hold),
-                            backgroundColor = CoralRed,
-                            contentColor = SurfaceWhite,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
+                            context.startService(stopIntent)
+                        },
+                        text = stringResource(R.string.btn_stop_hold),
+                        backgroundColor = CoralRed,
+                        contentColor = SurfaceWhite,
+                        modifier = Modifier.weight(1f)
+                    )
                 }
             }
         }

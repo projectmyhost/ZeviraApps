@@ -1,4 +1,4 @@
-﻿<resources>
+<resources>
     <string name="app_name">Zevira</string>
     <string name="tagline">Pencatat Perjalanan Realtime</string>
 
@@ -28,8 +28,8 @@
     <string name="banner_guest_desc">Login sekarang biar riwayat perjalananmu aman tersimpan di cloud.</string>
     <string name="btn_login_register">Login / Daftar</string>
     <string name="btn_try_demo">Coba Akun Demo</string>
-    <string name="demo_mode_banner">Mode Demo: datamu tidak tersimpan permanen.</string>
-    <string name="btn_upgrade_account">Simpan Zevira (Jadikan Akun Asli)</string>
+    <string name="demo_mode_banner">Mode Demo: data tersimpan lokal.</string>
+    <string name="btn_upgrade_account">Simpan Akun</string>
     <string name="gateway_sheet_title">Pilih Mode Masuk</string>
     <string name="gateway_sheet_desc">Untuk merekam jejak perjalanan, pilih login akun atau gunakan akun demo sementara.</string>
     <string name="gateway_demo_warning">Akun demo hanya menyimpan data di perangkat ini dan terbatas 5 trip.</string>

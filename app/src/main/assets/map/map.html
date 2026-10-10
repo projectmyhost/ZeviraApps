@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="utf-8" />
@@ -170,6 +170,7 @@
 
         function updateLocation(lat, lng, accuracy, heading) {
             if (!map) return;
+            var isFirstFix = !userMarker;
             currentLat = lat;
             currentLng = lng;
 
@@ -209,7 +210,11 @@
             }
 
             if (autoFollow) {
-                map.panTo([lat, lng], { animate: true, duration: 0.5 });
+                if (isFirstFix) {
+                    map.setView([lat, lng], 17);
+                } else {
+                    map.panTo([lat, lng], { animate: true, duration: 0.5 });
+                }
             }
         }
 

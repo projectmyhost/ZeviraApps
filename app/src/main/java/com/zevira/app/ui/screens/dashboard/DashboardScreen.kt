@@ -283,22 +283,41 @@ fun DashboardScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(bottom = 16.dp),
-                    backgroundColor = Color(0xFFFFF0F0),
-                    borderColor = CoralRed
+                    backgroundColor = Color(0xFFFFFBEB),
+                    borderColor = Color(0xFFF59E0B),
+                    shadowColor = Color(0x22F59E0B)
                 ) {
                     Row(
-                        modifier = Modifier.padding(14.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 14.dp, vertical = 10.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Column(modifier = Modifier.weight(1f)) {
+                        Row(
+                            modifier = Modifier.weight(1f),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
                             Text(
-                                text = stringResource(R.string.demo_mode_banner),
-                                color = CoralRed,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 13.sp
+                                text = "⚠️",
+                                fontSize = 16.sp
                             )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Column {
+                                Text(
+                                    text = "Mode Demo",
+                                    color = Color(0xFF92400E),
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 13.sp
+                                )
+                                Text(
+                                    text = stringResource(R.string.demo_mode_banner),
+                                    color = Color(0xFFB45309),
+                                    fontSize = 11.sp
+                                )
+                            }
                         }
+                        Spacer(modifier = Modifier.width(10.dp))
                         CartoonButton(
                             onClick = onNavigateToLogin,
                             text = stringResource(R.string.btn_upgrade_account),

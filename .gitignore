@@ -18,3 +18,4 @@ google-services.json
 
 # OS specific
 Thumbs.db
+.kotlin/
