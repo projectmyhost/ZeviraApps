@@ -176,7 +176,7 @@
             }
         }
 
-        function updateLocation(lat, lng, accuracy, heading) {
+        function updateLocation(lat, lng, accuracy, heading, isTracking) {
             if (!map) return;
             var isFirstFix = !userMarker;
             currentLat = lat;
@@ -217,12 +217,23 @@
                 }
             }
 
+            // Realtime tracking polyline (draws live route behind user like Strava)
+            if (isTracking && routePolyline) {
+                routePolyline.addLatLng([lat, lng]);
+            }
+
             if (autoFollow) {
                 if (isFirstFix) {
                     map.setView([lat, lng], 17);
                 } else {
                     map.panTo([lat, lng], { animate: true, duration: 0.5 });
                 }
+            }
+        }
+
+        function clearTrackingRoute() {
+            if (routePolyline) {
+                routePolyline.setLatLngs([]);
             }
         }
 

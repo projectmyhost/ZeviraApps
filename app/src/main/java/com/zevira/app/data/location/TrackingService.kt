@@ -339,7 +339,7 @@ class TrackingService : Service() {
             timestampMs = timestamp
         )
 
-        val isGpsWeak = accuracy > 45f
+        val isGpsWeak = accuracy > 65f
 
         // Set Start Location if not set yet
         if (startLat == null || startLng == null) {
@@ -369,12 +369,12 @@ class TrackingService : Service() {
             }
         }
 
-        // Only accumulate distance & save polyline points if fix is not weak
+        // Accumulate distance & save polyline points if fix is within reasonable bounds
         if (!isGpsWeak) {
             // 4. Segment Gap Check: if time gap > 30s, start new segment without adding fake line/distance
             val isSegmentGap = lastAcceptedTimestampMs > 0 && (timestamp - lastAcceptedTimestampMs > 30000L)
 
-            // 5. Distance Accumulation
+            // 5. Distance Accumulation (Realtime accurate walking distance like Strava)
             val lastLoc = lastAcceptedLocation
             if (lastLoc != null && !isSegmentGap) {
                 val results = FloatArray(1)
@@ -384,8 +384,8 @@ class TrackingService : Service() {
                     results
                 )
                 val d = results[0].toDouble()
-                // Only add distance if moving (speed >= 0.3 m/s or displacement > 3m)
-                if (speedMps >= 0.3f || d > 3.0) {
+                // Walking step accumulation: add distance if step >= 1.0m and under anomaly threshold (< 75m)
+                if (d >= 1.0 && d < 75.0) {
                     distanceMeters += d
                 }
             }
@@ -423,13 +423,15 @@ class TrackingService : Service() {
 
         val speedKmh = speedMps * 3.6
 
-        // Dynamic Calories
-        val calories = CalorieCalculator.calculateCalories(
+        // Dynamic Calories directly scaled to Profile Weight (kg)
+        val metCalories = CalorieCalculator.calculateCalories(
             activity = sportActivity,
             speedKmh = speedKmh,
             weightKg = userWeightKg,
             durationSeconds = movingDurationSeconds
         )
+        val distanceCalories = (distanceMeters / 1000.0) * userWeightKg * 0.78
+        val calories = kotlin.math.max(metCalories, distanceCalories)
 
         // Always update trackingState coordinates so map blue dot tracks accurately!
         _trackingState.value = _trackingState.value.copy(

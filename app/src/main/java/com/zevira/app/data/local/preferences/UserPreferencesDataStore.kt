@@ -1,4 +1,4 @@
-﻿package com.zevira.app.data.local.preferences
+package com.zevira.app.data.local.preferences
 
 import android.content.Context
 import androidx.datastore.core.DataStore
@@ -26,6 +26,8 @@ class UserPreferencesDataStore @Inject constructor(
 
     companion object {
         val KEY_USER_ID = stringPreferencesKey("user_id")
+        val KEY_USERNAME = stringPreferencesKey("username")
+        val KEY_DISPLAY_NAME = stringPreferencesKey("display_name")
         val KEY_IS_GUEST = booleanPreferencesKey("is_guest")
         val KEY_IS_DEMO = booleanPreferencesKey("is_demo")
         val KEY_USER_WEIGHT_KG = floatPreferencesKey("user_weight_kg")
@@ -38,6 +40,14 @@ class UserPreferencesDataStore @Inject constructor(
 
     val userIdFlow: Flow<String> = dataStore.data.map { prefs ->
         prefs[KEY_USER_ID] ?: ""
+    }
+
+    val usernameFlow: Flow<String> = dataStore.data.map { prefs ->
+        prefs[KEY_USERNAME] ?: ""
+    }
+
+    val displayNameFlow: Flow<String> = dataStore.data.map { prefs ->
+        prefs[KEY_DISPLAY_NAME] ?: ""
     }
 
     val isGuestFlow: Flow<Boolean> = dataStore.data.map { prefs ->
@@ -70,6 +80,13 @@ class UserPreferencesDataStore @Inject constructor(
 
     suspend fun setUserId(userId: String) {
         dataStore.edit { it[KEY_USER_ID] = userId }
+    }
+
+    suspend fun setUserProfile(displayName: String, username: String) {
+        dataStore.edit {
+            it[KEY_DISPLAY_NAME] = displayName
+            it[KEY_USERNAME] = username
+        }
     }
 
     suspend fun setUserStatus(isGuest: Boolean, isDemo: Boolean) {
@@ -105,6 +122,8 @@ class UserPreferencesDataStore @Inject constructor(
     suspend fun clearUserSession() {
         dataStore.edit {
             it[KEY_USER_ID] = ""
+            it[KEY_USERNAME] = ""
+            it[KEY_DISPLAY_NAME] = ""
             it[KEY_IS_GUEST] = true
             it[KEY_IS_DEMO] = false
         }

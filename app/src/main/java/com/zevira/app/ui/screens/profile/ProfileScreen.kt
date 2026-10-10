@@ -83,15 +83,10 @@ fun ProfileScreen(
     val totalStars by prefs.totalStarsFlow.collectAsState(initial = 0)
 
     var showDeleteConfirmDialog by remember { mutableStateOf(false) }
+    var showLogoutConfirmDialog by remember { mutableStateOf(false) }
     var weightInput by remember { mutableStateOf(weightKg.toString()) }
 
-    val db = remember {
-        androidx.room.Room.databaseBuilder(
-            context,
-            ZeviraDatabase::class.java,
-            "zevira_database.db"
-        ).build()
-    }
+    val db = remember { ZeviraDatabase.getInstance(context) }
 
     Column(
         modifier = Modifier
@@ -300,9 +295,7 @@ fun ProfileScreen(
             )
         } else {
             CartoonButton(
-                onClick = {
-                    coroutineScope.launch { prefs.clearUserSession() }
-                },
+                onClick = { showLogoutConfirmDialog = true },
                 text = stringResource(R.string.btn_logout),
                 backgroundColor = SurfaceWhite,
                 contentColor = TextPrimary,
@@ -353,6 +346,44 @@ fun ProfileScreen(
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirmDialog = false }) {
                     Text(text = stringResource(R.string.btn_cancel))
+                }
+            }
+        )
+    }
+
+    if (showLogoutConfirmDialog) {
+        AlertDialog(
+            onDismissRequest = { showLogoutConfirmDialog = false },
+            title = {
+                Text(
+                    text = "Konfirmasi Keluar 🚪",
+                    fontWeight = FontWeight.ExtraBold,
+                    color = TextPrimary
+                )
+            },
+            text = {
+                Text(
+                    text = "Apakah kamu yakin ingin keluar dari akun ini? Sesi login kamu akan dihapus dengan aman dan kamu dapat masuk kembali kapan saja.",
+                    color = TextSecondary,
+                    fontSize = 14.sp
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        coroutineScope.launch {
+                            prefs.clearUserSession()
+                            showLogoutConfirmDialog = false
+                            onNavigateToLogin()
+                        }
+                    }
+                ) {
+                    Text("Ya, Keluar", color = CoralRed, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLogoutConfirmDialog = false }) {
+                    Text("Batal", color = TextSecondary)
                 }
             }
         )

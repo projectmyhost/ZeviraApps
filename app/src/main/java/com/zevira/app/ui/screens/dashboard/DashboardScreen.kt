@@ -163,8 +163,10 @@ fun DashboardScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
+                        val resolvedName = state.displayName.ifEmpty { state.userName }
+                        val greetingText = if (resolvedName.isNotBlank()) "Halo, $resolvedName!" else stringResource(R.string.greeting_day)
                         Text(
-                            text = stringResource(R.string.greeting_day),
+                            text = greetingText,
                             color = TextLightPrimary,
                             fontWeight = FontWeight.Bold,
                             fontSize = 20.sp

@@ -1,4 +1,4 @@
-﻿package com.zevira.app.ui.screens.map
+package com.zevira.app.ui.screens.map
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -52,6 +52,7 @@ fun LeafletMapView(
     startLat: Double?,
     startLng: Double?,
     mapStyle: String, // "real_life" or "clean_white"
+    isTracking: Boolean = false,
     recenterTrigger: Long = 0L,
     highlightPoints: List<LatLngPoint>? = null,
     onUserPanned: () -> Unit = {}
@@ -137,11 +138,11 @@ fun LeafletMapView(
         }
     }
 
-    // Update Current Location
-    LaunchedEffect(currentLat, currentLng, currentAccuracy, currentBearing) {
+    // Update Current Location & Live Tracking Polyline
+    LaunchedEffect(currentLat, currentLng, currentAccuracy, currentBearing, isTracking) {
         if (currentLat != null && currentLng != null) {
             webView.evaluateJavascript(
-                "updateLocation($currentLat, $currentLng, $currentAccuracy, $currentBearing);",
+                "updateLocation($currentLat, $currentLng, $currentAccuracy, $currentBearing, $isTracking);",
                 null
             )
         }

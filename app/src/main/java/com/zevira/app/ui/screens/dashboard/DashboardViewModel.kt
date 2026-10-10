@@ -1,4 +1,4 @@
-﻿package com.zevira.app.ui.screens.dashboard
+package com.zevira.app.ui.screens.dashboard
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -21,6 +21,8 @@ data class DashboardUiState(
     val isGuest: Boolean = true,
     val isDemo: Boolean = false,
     val userId: String = "",
+    val userName: String = "",
+    val displayName: String = "",
     val selectedMode: TrackingMode = TrackingMode.WALK,
     val recentTrip: TripEntity? = null,
     val activeUnfinishedTrip: TripEntity? = null,
@@ -28,6 +30,14 @@ data class DashboardUiState(
     val todayDistanceKm: Double = 0.0,
     val todayDurationMinutes: Long = 0L,
     val showGatewaySheet: Boolean = false
+)
+
+private data class UserAuthInfo(
+    val isGuest: Boolean,
+    val isDemo: Boolean,
+    val userId: String,
+    val username: String,
+    val displayName: String
 )
 
 @HiltViewModel
@@ -39,19 +49,30 @@ class DashboardViewModel @Inject constructor(
     private val _selectedMode = MutableStateFlow(TrackingMode.WALK)
     private val _showGatewaySheet = MutableStateFlow(false)
 
-    val uiState: StateFlow<DashboardUiState> = combine(
+    private val authInfoFlow = combine(
         preferencesDataStore.isGuestFlow,
         preferencesDataStore.isDemoFlow,
         preferencesDataStore.userIdFlow,
+        preferencesDataStore.usernameFlow,
+        preferencesDataStore.displayNameFlow
+    ) { isGuest, isDemo, userId, username, displayName ->
+        UserAuthInfo(isGuest, isDemo, userId, username, displayName)
+    }
+
+    val uiState: StateFlow<DashboardUiState> = combine(
+        authInfoFlow,
         _selectedMode,
+        _showGatewaySheet,
         tripDao.observeActiveUnfinishedTrip()
-    ) { isGuest, isDemo, userId, mode, unfinishedTrip ->
+    ) { auth, mode, showSheet, unfinishedTrip ->
         DashboardUiState(
-            isGuest = isGuest,
-            isDemo = isDemo,
-            userId = userId,
+            isGuest = auth.isGuest,
+            isDemo = auth.isDemo,
+            userId = auth.userId,
+            userName = auth.username,
+            displayName = auth.displayName,
             selectedMode = mode,
-            showGatewaySheet = _showGatewaySheet.value,
+            showGatewaySheet = showSheet,
             activeUnfinishedTrip = unfinishedTrip
         )
     }.stateIn(

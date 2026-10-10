@@ -59,10 +59,15 @@ import com.zevira.app.ui.components.CartoonChip
 import com.zevira.app.ui.components.CartoonHoldButton
 import com.zevira.app.ui.theme.CoralRed
 import android.Manifest
+import android.content.Context
 import android.content.pm.PackageManager
+import android.location.LocationManager
 import android.os.Looper
+import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.mutableFloatStateOf
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
@@ -98,6 +103,7 @@ fun TrackingLiveScreen(
     var recenterTrigger by remember { mutableLongStateOf(0L) }
     var showRecenterButton by remember { mutableStateOf(false) }
     var selectedMode by remember { mutableStateOf(TrackingMode.WALK) }
+    var showGpsDisabledDialog by remember { mutableStateOf(false) }
 
     // Check location permission state
     val fineGranted = ContextCompat.checkSelfPermission(
@@ -182,7 +188,7 @@ fun TrackingLiveScreen(
     val liveBearing = if (trackingState.isTracking) trackingState.currentBearing else previewBearing
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // 1. Fullscreen Leaflet Map
+        // 1. Fullscreen Leaflet Map with Realtime Route Drawing
         LeafletMapView(
             modifier = Modifier.fillMaxSize(),
             currentLat = liveLat,
@@ -192,6 +198,7 @@ fun TrackingLiveScreen(
             startLat = trackingState.startLat,
             startLng = trackingState.startLng,
             mapStyle = mapStyle,
+            isTracking = trackingState.isTracking,
             recenterTrigger = recenterTrigger,
             onUserPanned = { showRecenterButton = true }
         )
@@ -389,7 +396,7 @@ fun TrackingLiveScreen(
 
                     Spacer(modifier = Modifier.height(14.dp))
 
-                    // Big Start Button
+                    // Big Start Button with GPS Hardware Enforcement
                     CartoonButton(
                         onClick = {
                             if (!hasLocationPermission) {
@@ -399,16 +406,27 @@ fun TrackingLiveScreen(
                                         Manifest.permission.ACCESS_COARSE_LOCATION
                                     )
                                 )
-                            } else {
-                                val startIntent = Intent(context, TrackingService::class.java).apply {
-                                    action = TrackingService.ACTION_START
-                                    putExtra(TrackingService.EXTRA_MODE, selectedMode.name)
-                                }
-                                try {
-                                    context.startForegroundService(startIntent)
-                                } catch (e: Exception) {
-                                    timber.log.Timber.e(e, "Failed to startForegroundService")
-                                }
+                                return@CartoonButton
+                            }
+
+                            // Strict Check: Ensure GPS Location sensor is turned ON on device!
+                            val locManager = context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager
+                            val isGpsActive = locManager?.isProviderEnabled(LocationManager.GPS_PROVIDER) == true ||
+                                              locManager?.isProviderEnabled(LocationManager.NETWORK_PROVIDER) == true
+
+                            if (!isGpsActive) {
+                                showGpsDisabledDialog = true
+                                return@CartoonButton
+                            }
+
+                            val startIntent = Intent(context, TrackingService::class.java).apply {
+                                action = TrackingService.ACTION_START
+                                putExtra(TrackingService.EXTRA_MODE, selectedMode.name)
+                            }
+                            try {
+                                context.startForegroundService(startIntent)
+                            } catch (e: Exception) {
+                                timber.log.Timber.e(e, "Failed to startForegroundService")
                             }
                         },
                         text = "Mulai Merekam",
@@ -627,6 +645,47 @@ fun TrackingLiveScreen(
                     }
                 }
             }
+        }
+        // 6. Enforced GPS Hardware Sensor Dialog (Cannot record if GPS is OFF)
+        if (showGpsDisabledDialog) {
+            AlertDialog(
+                onDismissRequest = { showGpsDisabledDialog = false },
+                title = {
+                    Text(
+                        text = "GPS Lokasi Belum Aktif 🛰️",
+                        fontWeight = FontWeight.ExtraBold,
+                        color = TextPrimary,
+                        fontSize = 18.sp
+                    )
+                },
+                text = {
+                    Text(
+                        text = "Aplikasi Zevira membutuhkan sensor GPS yang aktif pada perangkat Anda agar pergerakan dan jarak KM dapat dilacak secara akurat (seperti Strava).\n\nSilakan aktifkan Layanan Lokasi (GPS) di perangkat Anda terlebih dahulu.",
+                        fontSize = 14.sp,
+                        color = TextSecondary,
+                        lineHeight = 20.sp
+                    )
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            showGpsDisabledDialog = false
+                            try {
+                                context.startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+                            } catch (e: Exception) {
+                                timber.log.Timber.e(e, "Cannot open location settings")
+                            }
+                        }
+                    ) {
+                        Text("Buka Pengaturan GPS", color = ElectricBlue, fontWeight = FontWeight.Bold)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showGpsDisabledDialog = false }) {
+                        Text("Batal", color = TextSecondary)
+                    }
+                }
+            )
         }
     }
 }
