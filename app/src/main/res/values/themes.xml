@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Base application theme. -->
+    <style name="Theme.Navira" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">@color/surface_white</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+
+    <!-- Native SplashScreen API Theme -->
+    <style name="Theme.Navira.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/electric_blue</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_navira_star</item>
+        <item name="postSplashScreenTheme">@style/Theme.Navira</item>
+    </style>
+</resources>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="electric_blue">#2D7BFF</color>
+    <color name="primary_dark">#1B4FD8</color>
+    <color name="sky_blue">#7CC4FF</color>
+    <color name="night_navy">#0B1B4D</color>
+    <color name="night_navy_end">#14307E</color>
+    <color name="star_yellow">#FFD84D</color>
+    <color name="mint_green">#3DDC97</color>
+    <color name="coral_red">#FF6B6B</color>
+    <color name="surface_white">#FFFFFF</color>
+    <color name="surface_tint">#F2F7FF</color>
+    <color name="text_primary">#0F1B3D</color>
+    <color name="text_secondary">#5B6B93</color>
+    <color name="sticker_border">#0F1B3D</color>
+</resources>

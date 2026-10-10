@@ -1,0 +1,139 @@
+<resources>
+    <string name="app_name">Navira</string>
+    <string name="tagline">Pencatat Perjalanan Realtime</string>
+
+    <!-- Bottom Nav -->
+    <string name="nav_home">Beranda</string>
+    <string name="nav_map">Peta</string>
+    <string name="nav_history">Riwayat</string>
+    <string name="nav_profile">Profil</string>
+
+    <!-- Dashboard -->
+    <string name="greeting_day">Halo, Penjelajah!</string>
+    <string name="greeting_sub">Siap merekam petualanganmu hari ini?</string>
+    <string name="btn_start_tracking">GO</string>
+    <string name="mode_walk">Jalan-jalan</string>
+    <string name="mode_sport">Olahraga</string>
+    <string name="stat_today">Hari Ini</string>
+    <string name="stat_week">Minggu Ini</string>
+    <string name="stat_distance">Jarak</string>
+    <string name="stat_duration">Durasi</string>
+    <string name="stat_calories">Kalori</string>
+    <string name="quick_compass">Kompas Cepat</string>
+    <string name="last_trip">Trip Terakhir</string>
+    <string name="no_recent_trip">Belum ada trip. Tekan GO untuk mulai!</string>
+
+    <!-- User Status & Login Gateway -->
+    <string name="banner_guest_title">Simpan jejakmu selamanya!</string>
+    <string name="banner_guest_desc">Login sekarang biar riwayat perjalananmu aman tersimpan di cloud.</string>
+    <string name="btn_login_register">Login / Daftar</string>
+    <string name="btn_try_demo">Coba Akun Demo</string>
+    <string name="demo_mode_banner">Mode Demo: datamu tidak tersimpan permanen.</string>
+    <string name="btn_upgrade_account">Simpan Navira (Jadikan Akun Asli)</string>
+    <string name="gateway_sheet_title">Pilih Mode Masuk</string>
+    <string name="gateway_sheet_desc">Untuk merekam jejak perjalanan, pilih login akun atau gunakan akun demo sementara.</string>
+    <string name="gateway_demo_warning">Akun demo hanya menyimpan data di perangkat ini dan terbatas 5 trip.</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_1_title">Jejak Tanpa Batas</string>
+    <string name="onboarding_1_desc">Rekam setiap langkah perjalananmu secara realtime tanpa repot set tujuan.</string>
+    <string name="onboarding_2_title">Jangan Takut Tersesat</string>
+    <string name="onboarding_2_desc">Fitur Pulang ke Start membantumu kembali ke titik awal dengan mudah.</string>
+    <string name="onboarding_3_title">Koleksi Bintang</string>
+    <string name="onboarding_3_desc">Tiap kilometer yang kamu tempuh menyalakan bintang di langit malammu!</string>
+    <string name="btn_next">Lanjut</string>
+    <string name="btn_skip">Lewati</string>
+    <string name="btn_get_started">Mulai Petualangan</string>
+
+    <!-- Permission Primer -->
+    <string name="permission_primer_title">Izin yang Dibutuhkan</string>
+    <string name="permission_primer_desc">Navira butuh beberapa izin agar bisa merekam rute perjalananmu dengan akurat dan hemat daya.</string>
+    <string name="perm_loc_title">Lokasi Akurat</string>
+    <string name="perm_loc_desc">Diperlukan untuk merekam jejak rute perjalananmu di peta secara realtime.</string>
+    <string name="perm_bg_loc_title">Lokasi Latar Belakang</string>
+    <string name="perm_bg_loc_desc">Memungkinkan perekaman trip tetap berjalan saat layar HP mati atau saat membuka aplikasi lain.</string>
+    <string name="perm_notif_title">Notifikasi Tracking</string>
+    <string name="perm_notif_desc">Menampilkan status tracking aktif dan kontrol cepat (Pause/Stop) di status bar.</string>
+    <string name="btn_grant_permissions">Izinkan &amp; Lanjutkan</string>
+    <string name="perm_denied_warning">Izin lokasi presisi sangat penting agar aplikasi dapat mencatat rute.</string>
+    <string name="btn_open_settings">Buka Pengaturan</string>
+    <string name="gps_disabled_warning">GPS perangkat mati. Aktifkan GPS untuk memulai pelacakan.</string>
+    <string name="btn_enable_gps">Aktifkan GPS</string>
+    <string name="miui_battery_tip_title">Tips Pengguna POCO / Xiaomi</string>
+    <string name="miui_battery_tip_desc">Aktifkan Autostart dan atur Penghemat Baterai ke \'Tanpa Pembatasan\' agar tracking tidak dihentikan oleh MIUI/HyperOS.</string>
+
+    <!-- Tracking Live -->
+    <string name="searching_gps">Mencari sinyal GPS…</string>
+    <string name="gps_low_accuracy">Sinyal GPS lemah</string>
+    <string name="tracking_active">Pelacakan Berjalan</string>
+    <string name="tracking_paused">Pelacakan Dijeda</string>
+    <string name="btn_pause">Jeda</string>
+    <string name="btn_resume">Lanjut</string>
+    <string name="btn_stop_hold">Tahan untuk Berhenti</string>
+    <string name="btn_return_to_start">Pulang ke Start</string>
+    <string name="btn_recenter">Pusatkan</string>
+    <string name="map_style_real_life">Real Life (Satelit)</string>
+    <string name="map_style_clean_white">Putih Polos</string>
+    <string name="speed_unit">km/j</string>
+    <string name="distance_unit">km</string>
+    <string name="pace_unit">mnt/km</string>
+    <string name="calories_unit">kkal</string>
+    <string name="calorie_disclaimer">*Perhitungan kalori merupakan estimasi</string>
+    <string name="restored_trip_banner">Trip sebelumnya belum selesai, lanjutkan?</string>
+    <string name="btn_restore_yes">Lanjutkan</string>
+    <string name="btn_restore_discard">Buang</string>
+
+    <!-- Pulang ke Start -->
+    <string name="return_start_title">Pulang ke Titik Awal</string>
+    <string name="return_distance_label">Jarak Garis Lurus</string>
+    <string name="return_eta_label">Estimasi Jalan Kaki</string>
+    <string name="btn_highlight_route">Sorot Rute Berangkat</string>
+
+    <!-- Trip Summary & Detail -->
+    <string name="summary_title">Petualangan Selesai!</string>
+    <string name="summary_great_job">Langkah hebat hari ini!</string>
+    <string name="trip_name_hint">Beri nama petualanganmu…</string>
+    <string name="btn_save_trip">Simpan Perjalanan</string>
+    <string name="btn_discard_trip">Buang Trip</string>
+    <string name="btn_export_gpx">Ekspor GPX</string>
+    <string name="gpx_exported_success">File GPX berhasil disimpan!</string>
+    <string name="star_earned_toast">Kamu menyalakan %1$d Bintang Baru!</string>
+    <string name="replay_route">Replay Rute</string>
+
+    <!-- History -->
+    <string name="history_title">Riwayat Jejak</string>
+    <string name="filter_all">Semua</string>
+    <string name="empty_history">Belum ada riwayat perjalanan.</string>
+    <string name="trip_deleted">Trip berhasil dihapus</string>
+    <string name="action_undo">BATAL</string>
+
+    <!-- Auth -->
+    <string name="login_title">Masuk ke Navira</string>
+    <string name="register_title">Daftar Akun Baru</string>
+    <string name="label_username">Username</string>
+    <string name="label_password">Kata Sandi</string>
+    <string name="label_confirm_password">Konfirmasi Kata Sandi</string>
+    <string name="btn_login">Masuk</string>
+    <string name="btn_register">Daftar</string>
+    <string name="btn_google_signin">Masuk dengan Google</string>
+    <string name="terms_agreement">Saya menyetujui Syarat &amp; Ketentuan dan Kebijakan Privasi</string>
+    <string name="terms_link">Syarat &amp; Ketentuan</string>
+    <string name="privacy_link">Kebijakan Privasi</string>
+    <string name="error_invalid_credentials">Username atau kata sandi salah.</string>
+    <string name="error_username_taken">Username sudah digunakan.</string>
+    <string name="error_password_weak">Kata sandi minimal 10 karakter, harus kombinasi huruf besar, kecil, dan angka.</string>
+    <string name="error_rate_limited">Terlalu banyak percobaan gagal. Silakan tunggu %1$d detik.</string>
+
+    <!-- Profile & Settings -->
+    <string name="profile_title">Profil &amp; Pengaturan</string>
+    <string name="setting_weight">Berat Badan</string>
+    <string name="setting_map_style">Gaya Peta Default</string>
+    <string name="setting_power_saver">Mode Hemat Baterai</string>
+    <string name="setting_power_saver_desc">Matikan animasi bintang &amp; minimalkan pemakaian sensor.</string>
+    <string name="btn_logout">Keluar</string>
+    <string name="btn_logout_all">Keluar dari Semua Perangkat</string>
+    <string name="btn_delete_account">Hapus Akun &amp; Seluruh Data</string>
+    <string name="delete_account_confirm">Apakah kamu yakin ingin menghapus akun dan semua data perjalanan? Tindakan ini permanen.</string>
+    <string name="btn_confirm_delete">Hapus Selamanya</string>
+    <string name="btn_cancel">Batal</string>
+</resources>

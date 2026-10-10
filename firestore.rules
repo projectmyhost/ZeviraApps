@@ -1,0 +1,41 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{db}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isMember() {
+      return signedIn() && request.auth.token.firebase.sign_in_provider != 'anonymous';
+    }
+
+    // Users Collection
+    match /users/{uid} {
+      allow read, write: if isMember() && request.auth.uid == uid;
+    }
+
+    // Trips Collection & Subcollection Chunks
+    match /trips/{tripId} {
+      allow read: if isMember() && resource.data.ownerUid == request.auth.uid;
+      allow create: if isMember() && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.title is string
+        && request.resource.data.distanceMeters is number
+        && request.resource.data.durationSeconds is number;
+      allow update, delete: if isMember() && resource.data.ownerUid == request.auth.uid;
+
+      // 500-point chunks per trip
+      match /chunks/{chunkId} {
+        allow read, write: if isMember() && get(/databases/$(db)/documents/trips/$(tripId)).data.ownerUid == request.auth.uid;
+      }
+    }
+
+    // Usernames Mapping Collection for uniqueness
+    match /usernames/{name} {
+      allow read: if signedIn();
+      allow create: if isMember() && request.resource.data.uid == request.auth.uid
+        && name.size() >= 4 && name.size() <= 20;
+      allow update, delete: if false;
+    }
+  }
+}

@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://appassets.androidplatform.net; img-src 'self' data: https://server.arcgisonline.com https://*.arcgisonline.com https://appassets.androidplatform.net; style-src 'self' 'unsafe-inline' https://appassets.androidplatform.net; script-src 'self' 'unsafe-inline' https://appassets.androidplatform.net;" />
+    <title>Navira Map</title>
+    <link rel="stylesheet" href="leaflet.css" />
+    <style>
+        html, body, #map {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #F8FAFD;
+            font-family: sans-serif;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        /* Putih Polos grid background */
+        .clean-white-grid {
+            background-color: #FFFFFF !important;
+            background-image: linear-gradient(#EDF2F7 1px, transparent 1px), linear-gradient(90deg, #EDF2F7 1px, transparent 1px) !important;
+            background-size: 30px 30px !important;
+        }
+        /* Custom markers */
+        .user-marker {
+            position: relative;
+            width: 24px;
+            height: 24px;
+        }
+        .user-dot {
+            width: 18px;
+            height: 18px;
+            background-color: #2D7BFF;
+            border: 3px solid #FFFFFF;
+            border-radius: 50%;
+            box-shadow: 0 2px 6px rgba(15, 27, 61, 0.4);
+            margin: 3px auto;
+        }
+        .user-heading {
+            width: 0;
+            height: 0;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-bottom: 10px solid #FFD84D;
+            margin: 0 auto;
+            position: absolute;
+            top: -6px;
+            left: 6px;
+            transform-origin: bottom center;
+        }
+        .start-marker {
+            width: 22px;
+            height: 22px;
+            background-color: #3DDC97;
+            border: 3px solid #0F1B3D;
+            border-radius: 50%;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: bold;
+            color: #0F1B3D;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <script src="leaflet.js"></script>
+    <script>
+        var map = null;
+        var satelliteTileLayer = null;
+        var currentMapStyle = "real_life";
+        var userMarker = null;
+        var accuracyCircle = null;
+        var startMarker = null;
+        var routePolyline = null;
+        var highlightPolyline = null;
+        var autoFollow = true;
+        var currentLat = 0;
+        var currentLng = 0;
+
+        function initNaviraMap(startLat, startLng, style) {
+            currentMapStyle = style || "real_life";
+            currentLat = startLat || -6.2088;
+            currentLng = startLng || 106.8456;
+
+            map = L.map('map', {
+                center: [currentLat, currentLng],
+                zoom: 17,
+                zoomControl: false,
+                attributionControl: false,
+                preferCanvas: true
+            });
+
+            // Satellite Layer (Esri World Imagery)
+            satelliteTileLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                maxZoom: 19,
+                attribution: 'Tiles &copy; Esri'
+            });
+
+            applyMapStyle(currentMapStyle);
+
+            // Polylines
+            routePolyline = L.polyline([], {
+                color: '#2D7BFF',
+                weight: 5,
+                opacity: 0.95,
+                lineJoin: 'round',
+                lineCap: 'round'
+            }).addTo(map);
+
+            highlightPolyline = L.polyline([], {
+                color: '#FFD84D',
+                weight: 6,
+                opacity: 0.9,
+                dashArray: '10, 10'
+            }).addTo(map);
+
+            // User pan listener stops auto-follow
+            map.on('dragstart', function() {
+                autoFollow = false;
+                if (window.NaviraBridge && window.NaviraBridge.onUserPan) {
+                    window.NaviraBridge.onUserPan();
+                }
+            });
+
+            if (window.NaviraBridge && window.NaviraBridge.onMapReady) {
+                window.NaviraBridge.onMapReady();
+            }
+        }
+
+        function setMapStyle(style) {
+            currentMapStyle = style;
+            applyMapStyle(style);
+        }
+
+        function applyMapStyle(style) {
+            var container = document.getElementById('map');
+            if (style === "clean_white") {
+                if (satelliteTileLayer && map.hasLayer(satelliteTileLayer)) {
+                    map.removeLayer(satelliteTileLayer);
+                }
+                container.classList.add('clean-white-grid');
+            } else {
+                container.classList.remove('clean-white-grid');
+                if (satelliteTileLayer && !map.hasLayer(satelliteTileLayer)) {
+                    satelliteTileLayer.addTo(map);
+                }
+            }
+        }
+
+        function setStartLocation(lat, lng) {
+            if (!map) return;
+            if (!startMarker) {
+                var startIcon = L.divIcon({
+                    className: 'start-marker-wrap',
+                    html: '<div class="start-marker">S</div>',
+                    iconSize: [22, 22],
+                    iconAnchor: [11, 11]
+                });
+                startMarker = L.marker([lat, lng], { icon: startIcon }).addTo(map);
+            } else {
+                startMarker.setLatLng([lat, lng]);
+            }
+        }
+
+        function updateLocation(lat, lng, accuracy, heading) {
+            if (!map) return;
+            currentLat = lat;
+            currentLng = lng;
+
+            // Accuracy circle
+            if (!accuracyCircle) {
+                accuracyCircle = L.circle([lat, lng], {
+                    radius: accuracy || 10,
+                    color: '#2D7BFF',
+                    fillColor: '#7CC4FF',
+                    fillOpacity: 0.2,
+                    weight: 1.5
+                }).addTo(map);
+            } else {
+                accuracyCircle.setLatLng([lat, lng]);
+                accuracyCircle.setRadius(accuracy || 10);
+            }
+
+            // User marker
+            var headingDeg = heading || 0;
+            if (!userMarker) {
+                var userIcon = L.divIcon({
+                    className: 'user-marker-wrap',
+                    html: '<div class="user-marker"><div class="user-heading" style="transform: rotate(' + headingDeg + 'deg);"></div><div class="user-dot"></div></div>',
+                    iconSize: [24, 24],
+                    iconAnchor: [12, 12]
+                });
+                userMarker = L.marker([lat, lng], { icon: userIcon, zIndexOffset: 1000 }).addTo(map);
+            } else {
+                userMarker.setLatLng([lat, lng]);
+                var el = userMarker.getElement();
+                if (el) {
+                    var headingEl = el.querySelector('.user-heading');
+                    if (headingEl) {
+                        headingEl.style.transform = 'rotate(' + headingDeg + 'deg)';
+                    }
+                }
+            }
+
+            if (autoFollow) {
+                map.panTo([lat, lng], { animate: true, duration: 0.5 });
+            }
+        }
+
+        function appendPoints(pointsJson) {
+            if (!map || !routePolyline) return;
+            var points = JSON.parse(pointsJson);
+            for (var i = 0; i < points.length; i++) {
+                routePolyline.addLatLng([points[i].lat, points[i].lng]);
+            }
+        }
+
+        function recenterMap() {
+            autoFollow = true;
+            if (map && currentLat !== 0 && currentLng !== 0) {
+                map.setView([currentLat, currentLng], 17, { animate: true });
+            }
+        }
+
+        function highlightRoute(pointsJson) {
+            if (!map || !highlightPolyline) return;
+            var points = JSON.parse(pointsJson);
+            var latLngs = [];
+            for (var i = 0; i < points.length; i++) {
+                latLngs.push([points[i].lat, points[i].lng]);
+            }
+            highlightPolyline.setLatLngs(latLngs);
+        }
+    </script>
+</body>
+</html>
