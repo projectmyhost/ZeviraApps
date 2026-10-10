@@ -60,8 +60,15 @@ import com.zevira.app.ui.components.CartoonHoldButton
 import com.zevira.app.ui.theme.CoralRed
 import android.Manifest
 import android.content.pm.PackageManager
+import android.os.Looper
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.mutableFloatStateOf
+import com.google.android.gms.location.LocationCallback
+import com.google.android.gms.location.LocationRequest
+import com.google.android.gms.location.LocationResult
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -87,9 +94,10 @@ fun TrackingLiveScreen(
     val context = LocalContext.current
     val trackingState by TrackingService.trackingState.collectAsState()
 
-    var mapStyle by remember { mutableStateOf("real_life") }
+    var mapStyle by remember { mutableStateOf("streets") }
     var recenterTrigger by remember { mutableLongStateOf(0L) }
     var showRecenterButton by remember { mutableStateOf(false) }
+    var selectedMode by remember { mutableStateOf(TrackingMode.WALK) }
 
     // Check location permission state
     val fineGranted = ContextCompat.checkSelfPermission(
@@ -115,35 +123,46 @@ fun TrackingLiveScreen(
 
     var initialLat by remember { mutableStateOf<Double?>(null) }
     var initialLng by remember { mutableStateOf<Double?>(null) }
+    var previewLat by remember { mutableStateOf<Double?>(null) }
+    var previewLng by remember { mutableStateOf<Double?>(null) }
+    var previewAccuracy by remember { mutableFloatStateOf(10f) }
+    var previewBearing by remember { mutableFloatStateOf(0f) }
 
-    LaunchedEffect(hasLocationPermission) {
-        if (hasLocationPermission && initialLat == null) {
+    // Live continuous location updates while IDLE / previewing map
+    DisposableEffect(hasLocationPermission, trackingState.isTracking) {
+        if (hasLocationPermission && !trackingState.isTracking) {
+            val fusedClient = LocationServices.getFusedLocationProviderClient(context)
+            val request = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 2000L)
+                .setMinUpdateIntervalMillis(1000L)
+                .setMinUpdateDistanceMeters(0f)
+                .build()
+            val idleCallback = object : LocationCallback() {
+                override fun onLocationResult(result: LocationResult) {
+                    val last = result.lastLocation ?: return
+                    previewLat = last.latitude
+                    previewLng = last.longitude
+                    previewAccuracy = last.accuracy
+                    previewBearing = if (last.hasBearing()) last.bearing else 0f
+                }
+            }
             try {
-                val fusedClient = com.google.android.gms.location.LocationServices.getFusedLocationProviderClient(context)
+                fusedClient.requestLocationUpdates(request, idleCallback, Looper.getMainLooper())
                 fusedClient.lastLocation.addOnSuccessListener { loc ->
-                    if (loc != null && initialLat == null) {
-                        initialLat = loc.latitude
-                        initialLng = loc.longitude
+                    if (loc != null && previewLat == null) {
+                        previewLat = loc.latitude
+                        previewLng = loc.longitude
+                        previewAccuracy = loc.accuracy
+                        previewBearing = if (loc.hasBearing()) loc.bearing else 0f
                     }
                 }
             } catch (e: SecurityException) {
                 // Handled gracefully
             }
-        }
-    }
-
-    // Start Tracking Service ONLY when location permission is granted
-    LaunchedEffect(hasLocationPermission) {
-        if (hasLocationPermission && !trackingState.isTracking) {
-            val startIntent = Intent(context, TrackingService::class.java).apply {
-                action = TrackingService.ACTION_START
-                putExtra(TrackingService.EXTRA_MODE, TrackingMode.WALK.name)
+            onDispose {
+                fusedClient.removeLocationUpdates(idleCallback)
             }
-            try {
-                context.startForegroundService(startIntent)
-            } catch (e: Exception) {
-                timber.log.Timber.e(e, "Failed to startForegroundService")
-            }
+        } else {
+            onDispose { }
         }
     }
 
@@ -157,14 +176,19 @@ fun TrackingLiveScreen(
         }
     }
 
+    val liveLat = if (trackingState.isTracking) trackingState.currentLat else (previewLat ?: initialLat)
+    val liveLng = if (trackingState.isTracking) trackingState.currentLng else (previewLng ?: initialLng)
+    val liveAccuracy = if (trackingState.isTracking) trackingState.currentAccuracy else previewAccuracy
+    val liveBearing = if (trackingState.isTracking) trackingState.currentBearing else previewBearing
+
     Box(modifier = Modifier.fillMaxSize()) {
         // 1. Fullscreen Leaflet Map
         LeafletMapView(
             modifier = Modifier.fillMaxSize(),
-            currentLat = trackingState.currentLat ?: initialLat,
-            currentLng = trackingState.currentLng ?: initialLng,
-            currentAccuracy = trackingState.currentAccuracy,
-            currentBearing = trackingState.currentBearing,
+            currentLat = liveLat,
+            currentLng = liveLng,
+            currentAccuracy = liveAccuracy,
+            currentBearing = liveBearing,
             startLat = trackingState.startLat,
             startLng = trackingState.startLng,
             mapStyle = mapStyle,
@@ -183,12 +207,13 @@ fun TrackingLiveScreen(
         ) {
             // Mode & GPS Status Chips
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                val currentMode = if (trackingState.isTracking) trackingState.mode else selectedMode
                 CartoonChip(
-                    text = if (trackingState.mode == TrackingMode.WALK) "Jalan" else "Olahraga",
+                    text = if (currentMode == TrackingMode.WALK) "Jalan" else "Olahraga",
                     backgroundColor = SurfaceWhite,
                     leadingIcon = {
                         Icon(
-                            imageVector = if (trackingState.mode == TrackingMode.WALK) Icons.Rounded.DirectionsWalk else Icons.Rounded.DirectionsRun,
+                            imageVector = if (currentMode == TrackingMode.WALK) Icons.Rounded.DirectionsWalk else Icons.Rounded.DirectionsRun,
                             contentDescription = null,
                             tint = ElectricBlue,
                             modifier = Modifier.size(16.dp)
@@ -196,46 +221,62 @@ fun TrackingLiveScreen(
                     }
                 )
 
-                if (trackingState.isSearchingGps) {
-                    CartoonChip(
-                        text = stringResource(R.string.searching_gps),
-                        backgroundColor = Color(0xFFFFF9E6),
-                        textColor = TextPrimary,
-                        borderColor = StarYellow
-                    )
-                } else if (trackingState.isGpsWeak) {
-                    CartoonChip(
-                        text = stringResource(R.string.gps_low_accuracy),
-                        backgroundColor = Color(0xFFFFF0F0),
-                        textColor = CoralRed,
-                        borderColor = CoralRed
-                    )
+                if (trackingState.isTracking) {
+                    if (trackingState.isSearchingGps) {
+                        CartoonChip(
+                            text = stringResource(R.string.searching_gps),
+                            backgroundColor = Color(0xFFFFF9E6),
+                            textColor = TextPrimary,
+                            borderColor = StarYellow
+                        )
+                    } else if (trackingState.isGpsWeak) {
+                        CartoonChip(
+                            text = stringResource(R.string.gps_low_accuracy),
+                            backgroundColor = Color(0xFFFFF0F0),
+                            textColor = CoralRed,
+                            borderColor = CoralRed
+                        )
+                    } else {
+                        CartoonChip(
+                            text = "GPS Presisi",
+                            backgroundColor = Color(0xFFE8FDF3),
+                            textColor = Color(0xFF0F5A38),
+                            borderColor = MintGreen
+                        )
+                    }
                 } else {
                     CartoonChip(
-                        text = "GPS Presisi",
-                        backgroundColor = Color(0xFFE8FDF3),
-                        textColor = Color(0xFF0F5A38),
-                        borderColor = MintGreen
+                        text = if (liveLat != null) "GPS Siap" else "Mencari GPS…",
+                        backgroundColor = if (liveLat != null) Color(0xFFE8FDF3) else Color(0xFFFFF9E6),
+                        textColor = if (liveLat != null) Color(0xFF0F5A38) else TextPrimary,
+                        borderColor = if (liveLat != null) MintGreen else StarYellow
                     )
                 }
             }
 
-            // Map Style Switcher (Satelit vs Putih Polos)
-            Box(
+            // Map Style Switcher Toggle Button (Peta Jalan vs Satelit Hybrid)
+            Row(
                 modifier = Modifier
-                    .size(44.dp)
-                    .background(SurfaceWhite, CircleShape)
-                    .border(2.dp, StickerBorder, CircleShape)
+                    .background(SurfaceWhite, PillShape)
+                    .border(2.dp, StickerBorder, PillShape)
                     .clickable {
-                        mapStyle = if (mapStyle == "real_life") "clean_white" else "real_life"
-                    },
-                contentAlignment = Alignment.Center
+                        mapStyle = if (mapStyle == "streets") "satellite_hybrid" else "streets"
+                    }
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 Icon(
                     imageVector = Icons.Rounded.Layers,
-                    contentDescription = "Ganti Gaya Peta",
-                    tint = TextPrimary,
-                    modifier = Modifier.size(22.dp)
+                    contentDescription = "Ganti Layer Peta",
+                    tint = ElectricBlue,
+                    modifier = Modifier.size(18.dp)
+                )
+                Text(
+                    text = if (mapStyle == "streets") stringResource(R.string.map_style_streets) else stringResource(R.string.map_style_satellite),
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 12.sp,
+                    color = TextPrimary
                 )
             }
         }
@@ -248,21 +289,23 @@ fun TrackingLiveScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
             horizontalAlignment = Alignment.End
         ) {
-            // Pulang ke Start Button
-            Box(
-                modifier = Modifier
-                    .size(52.dp)
-                    .background(StarYellow, CircleShape)
-                    .border(2.dp, StickerBorder, CircleShape)
-                    .clickable { onNavigateToReturnToStart() },
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.Navigation,
-                    contentDescription = stringResource(R.string.btn_return_to_start),
-                    tint = TextPrimary,
-                    modifier = Modifier.size(26.dp)
-                )
+            // Pulang ke Start Button (only when tracking is active and start point is known)
+            if (trackingState.isTracking && trackingState.startLat != null) {
+                Box(
+                    modifier = Modifier
+                        .size(52.dp)
+                        .background(StarYellow, CircleShape)
+                        .border(2.dp, StickerBorder, CircleShape)
+                        .clickable { onNavigateToReturnToStart() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Navigation,
+                        contentDescription = stringResource(R.string.btn_return_to_start),
+                        tint = TextPrimary,
+                        modifier = Modifier.size(26.dp)
+                    )
+                }
             }
 
             // Recenter Button
@@ -289,141 +332,244 @@ fun TrackingLiveScreen(
         }
 
         // 4. Bottom Control Panel
-        CartoonCard(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .padding(16.dp),
-            backgroundColor = SurfaceWhite
-        ) {
-            Column(modifier = Modifier.padding(18.dp)) {
-                // Metrics Row (Distance, Time, Speed)
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Distance
-                    Column(
-                        modifier = Modifier.weight(1f),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = stringResource(R.string.stat_distance),
-                            color = TextSecondary,
-                            fontSize = 11.sp,
-                            maxLines = 1
-                        )
-                        val distKm = trackingState.distanceMeters / 1000.0
-                        Text(
-                            text = String.format("%.2f km", distKm),
-                            fontWeight = FontWeight.ExtraBold,
-                            color = TextPrimary,
-                            fontSize = 20.sp,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-
-                    // Duration
-                    Column(
-                        modifier = Modifier.weight(1f),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = stringResource(R.string.stat_duration),
-                            color = TextSecondary,
-                            fontSize = 11.sp,
-                            maxLines = 1
-                        )
-                        val mins = trackingState.durationSeconds / 60
-                        val secs = trackingState.durationSeconds % 60
-                        Text(
-                            text = String.format("%02d:%02d", mins, secs),
-                            fontWeight = FontWeight.ExtraBold,
-                            color = TextPrimary,
-                            fontSize = 20.sp,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-
-                    // Speed
-                    Column(
-                        modifier = Modifier.weight(1f),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = "Kecepatan",
-                            color = TextSecondary,
-                            fontSize = 11.sp,
-                            maxLines = 1
-                        )
-                        Text(
-                            text = String.format("%.1f km/j", trackingState.currentSpeedKmh),
-                            fontWeight = FontWeight.ExtraBold,
-                            color = TextPrimary,
-                            fontSize = 20.sp,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                }
-
-                // Extra Calories Row for Sport Mode
-                if (trackingState.mode == TrackingMode.SPORT) {
-                    Spacer(modifier = Modifier.height(10.dp))
+        if (!trackingState.isTracking) {
+            // IDLE STATE: User can see map, choose mode, and tap "Mulai"
+            CartoonCard(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                backgroundColor = SurfaceWhite
+            ) {
+                Column(modifier = Modifier.padding(18.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = String.format("Kalori: %.1f kkal", trackingState.calories),
-                            fontWeight = FontWeight.Bold,
-                            color = StarYellow,
-                            fontSize = 13.sp
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Mulai Petualangan",
+                                fontWeight = FontWeight.ExtraBold,
+                                color = TextPrimary,
+                                fontSize = 18.sp
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "Titik lokasimu sudah terdeteksi di peta.",
+                                color = TextSecondary,
+                                fontSize = 12.sp
+                            )
+                        }
+                        MascotJejak(size = 46.dp, state = MascotState.IDLE)
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // Mode Toggle (Jalan-jalan vs Olahraga)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        CartoonButton(
+                            onClick = { selectedMode = TrackingMode.WALK },
+                            text = "Jalan-jalan",
+                            backgroundColor = if (selectedMode == TrackingMode.WALK) ElectricBlue else SurfaceWhite,
+                            contentColor = if (selectedMode == TrackingMode.WALK) SurfaceWhite else TextPrimary,
+                            modifier = Modifier.weight(1f)
                         )
-                        Text(
-                            text = stringResource(R.string.calorie_disclaimer),
-                            fontSize = 11.sp,
-                            color = TextSecondary
+                        CartoonButton(
+                            onClick = { selectedMode = TrackingMode.SPORT },
+                            text = "Olahraga",
+                            backgroundColor = if (selectedMode == TrackingMode.SPORT) StarYellow else SurfaceWhite,
+                            contentColor = TextPrimary,
+                            modifier = Modifier.weight(1f)
                         )
                     }
-                }
 
-                Spacer(modifier = Modifier.height(18.dp))
+                    Spacer(modifier = Modifier.height(14.dp))
 
-                // Actions: Pause/Resume + Long Press Stop
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    // Pause / Resume
+                    // Big Start Button
                     CartoonButton(
                         onClick = {
-                            val action = if (trackingState.isPaused) TrackingService.ACTION_RESUME else TrackingService.ACTION_PAUSE
-                            val intent = Intent(context, TrackingService::class.java).apply { this.action = action }
-                            context.startService(intent)
-                        },
-                        text = if (trackingState.isPaused) stringResource(R.string.btn_resume) else stringResource(R.string.btn_pause),
-                        backgroundColor = if (trackingState.isPaused) MintGreen else SurfaceWhite,
-                        contentColor = TextPrimary,
-                        modifier = Modifier.weight(1f)
-                    )
-
-                    // Long-Press Stop Button (Section 5: "Tombol Stop harus ditahan (long-press) agar tidak tertekan tidak sengaja")
-                    CartoonHoldButton(
-                        onHoldComplete = {
-                            val stopIntent = Intent(context, TrackingService::class.java).apply {
-                                action = TrackingService.ACTION_STOP
+                            if (!hasLocationPermission) {
+                                permissionLauncher.launch(
+                                    arrayOf(
+                                        Manifest.permission.ACCESS_FINE_LOCATION,
+                                        Manifest.permission.ACCESS_COARSE_LOCATION
+                                    )
+                                )
+                            } else {
+                                val startIntent = Intent(context, TrackingService::class.java).apply {
+                                    action = TrackingService.ACTION_START
+                                    putExtra(TrackingService.EXTRA_MODE, selectedMode.name)
+                                }
+                                try {
+                                    context.startForegroundService(startIntent)
+                                } catch (e: Exception) {
+                                    timber.log.Timber.e(e, "Failed to startForegroundService")
+                                }
                             }
-                            context.startService(stopIntent)
                         },
-                        text = stringResource(R.string.btn_stop_hold),
-                        backgroundColor = CoralRed,
-                        contentColor = SurfaceWhite,
-                        modifier = Modifier.weight(1f)
+                        text = "Mulai Merekam",
+                        backgroundColor = MintGreen,
+                        contentColor = TextPrimary,
+                        modifier = Modifier.fillMaxWidth(),
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Rounded.PlayArrow,
+                                contentDescription = null,
+                                tint = TextPrimary
+                            )
+                        }
                     )
+                }
+            }
+        } else {
+            // ACTIVE TRACKING STATE: Live Metrics, Pause/Resume, and Single-Click Stop
+            CartoonCard(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                backgroundColor = SurfaceWhite
+            ) {
+                Column(modifier = Modifier.padding(18.dp)) {
+                    // Metrics Row (Distance, Time, Speed)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Distance
+                        Column(
+                            modifier = Modifier.weight(1f),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = stringResource(R.string.stat_distance),
+                                color = TextSecondary,
+                                fontSize = 11.sp,
+                                maxLines = 1
+                            )
+                            val distKm = trackingState.distanceMeters / 1000.0
+                            Text(
+                                text = String.format("%.2f km", distKm),
+                                fontWeight = FontWeight.ExtraBold,
+                                color = TextPrimary,
+                                fontSize = 20.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+
+                        // Duration
+                        Column(
+                            modifier = Modifier.weight(1f),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = stringResource(R.string.stat_duration),
+                                color = TextSecondary,
+                                fontSize = 11.sp,
+                                maxLines = 1
+                            )
+                            val mins = trackingState.durationSeconds / 60
+                            val secs = trackingState.durationSeconds % 60
+                            Text(
+                                text = String.format("%02d:%02d", mins, secs),
+                                fontWeight = FontWeight.ExtraBold,
+                                color = TextPrimary,
+                                fontSize = 20.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+
+                        // Speed
+                        Column(
+                            modifier = Modifier.weight(1f),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "Kecepatan",
+                                color = TextSecondary,
+                                fontSize = 11.sp,
+                                maxLines = 1
+                            )
+                            Text(
+                                text = String.format("%.1f km/j", trackingState.currentSpeedKmh),
+                                fontWeight = FontWeight.ExtraBold,
+                                color = TextPrimary,
+                                fontSize = 20.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+
+                    // Extra Calories Row for Sport Mode
+                    if (trackingState.mode == TrackingMode.SPORT) {
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = String.format("Kalori: %.1f kkal", trackingState.calories),
+                                fontWeight = FontWeight.Bold,
+                                color = StarYellow,
+                                fontSize = 13.sp
+                            )
+                            Text(
+                                text = stringResource(R.string.calorie_disclaimer),
+                                fontSize = 11.sp,
+                                color = TextSecondary
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(18.dp))
+
+                    // Actions: Pause/Resume + Single Click Stop Button
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        // Pause / Resume
+                        CartoonButton(
+                            onClick = {
+                                val action = if (trackingState.isPaused) TrackingService.ACTION_RESUME else TrackingService.ACTION_PAUSE
+                                val intent = Intent(context, TrackingService::class.java).apply { this.action = action }
+                                context.startService(intent)
+                            },
+                            text = if (trackingState.isPaused) stringResource(R.string.btn_resume) else stringResource(R.string.btn_pause),
+                            backgroundColor = if (trackingState.isPaused) MintGreen else SurfaceWhite,
+                            contentColor = TextPrimary,
+                            modifier = Modifier.weight(1f)
+                        )
+
+                        // Single Click Stop Button (No hold required!)
+                        CartoonButton(
+                            onClick = {
+                                val stopIntent = Intent(context, TrackingService::class.java).apply {
+                                    action = TrackingService.ACTION_STOP
+                                }
+                                context.startService(stopIntent)
+                            },
+                            text = stringResource(R.string.btn_stop),
+                            backgroundColor = CoralRed,
+                            contentColor = SurfaceWhite,
+                            modifier = Modifier.weight(1f),
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Rounded.Stop,
+                                    contentDescription = null,
+                                    tint = SurfaceWhite
+                                )
+                            }
+                        )
+                    }
                 }
             }
         }

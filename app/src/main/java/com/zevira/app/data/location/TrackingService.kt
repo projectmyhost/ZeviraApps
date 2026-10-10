@@ -109,9 +109,15 @@ class TrackingService : Service() {
         val trackingState: StateFlow<TrackingState> = _trackingState.asStateFlow()
     }
 
+    override fun onCreate() {
+        super.onCreate()
+        startForegroundWithNotification()
+    }
+
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        startForegroundWithNotification()
         when (intent?.action) {
             ACTION_START -> {
                 val modeStr = intent.getStringExtra(EXTRA_MODE) ?: TrackingMode.WALK.name
@@ -127,7 +133,7 @@ class TrackingService : Service() {
             ACTION_RESUME -> resumeTracking()
             ACTION_STOP -> stopTracking()
         }
-        return START_STICKY
+        return START_NOT_STICKY
     }
 
     private fun startTracking(
@@ -146,6 +152,7 @@ class TrackingService : Service() {
 
         if (!hasFine && !hasCoarse) {
             Timber.e("startTracking aborted: Location permission ACCESS_FINE_LOCATION or ACCESS_COARSE_LOCATION not granted!")
+            stopForeground(STOP_FOREGROUND_REMOVE)
             stopSelf()
             return
         }

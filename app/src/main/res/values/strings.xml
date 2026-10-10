@@ -70,10 +70,13 @@
     <string name="btn_pause">Jeda</string>
     <string name="btn_resume">Lanjut</string>
     <string name="btn_stop_hold">Tahan untuk Berhenti</string>
+    <string name="btn_stop">Berhenti</string>
     <string name="btn_return_to_start">Pulang ke Start</string>
     <string name="btn_recenter">Pusatkan</string>
-    <string name="map_style_real_life">Real Life (Satelit)</string>
-    <string name="map_style_clean_white">Putih Polos</string>
+    <string name="map_style_streets">Peta Jalan</string>
+    <string name="map_style_satellite">Satelit Hybrid</string>
+    <string name="map_style_real_life">Satelit Hybrid</string>
+    <string name="map_style_clean_white">Peta Jalan</string>
     <string name="speed_unit">km/j</string>
     <string name="distance_unit">km</string>
     <string name="pace_unit">mnt/km</string>

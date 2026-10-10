@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://appassets.androidplatform.net; img-src 'self' data: https://server.arcgisonline.com https://*.arcgisonline.com https://appassets.androidplatform.net; style-src 'self' 'unsafe-inline' https://appassets.androidplatform.net; script-src 'self' 'unsafe-inline' https://appassets.androidplatform.net;" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://appassets.androidplatform.net; img-src 'self' data: https://mt0.google.com https://mt1.google.com https://mt2.google.com https://mt3.google.com https://*.google.com https://*.googleapis.com https://*.gstatic.com https://server.arcgisonline.com https://*.arcgisonline.com https://*.openstreetmap.org https://appassets.androidplatform.net https:; style-src 'self' 'unsafe-inline' https://appassets.androidplatform.net; script-src 'self' 'unsafe-inline' https://appassets.androidplatform.net;" />
     <title>Zevira Map</title>
     <link rel="stylesheet" href="leaflet.css" />
     <style>
@@ -17,12 +17,6 @@
             font-family: sans-serif;
             -webkit-user-select: none;
             user-select: none;
-        }
-        /* Putih Polos grid background */
-        .clean-white-grid {
-            background-color: #FFFFFF !important;
-            background-image: linear-gradient(#EDF2F7 1px, transparent 1px), linear-gradient(90deg, #EDF2F7 1px, transparent 1px) !important;
-            background-size: 30px 30px !important;
         }
         /* Custom markers */
         .user-marker {
@@ -72,8 +66,9 @@
     <script src="leaflet.js"></script>
     <script>
         var map = null;
-        var satelliteTileLayer = null;
-        var currentMapStyle = "real_life";
+        var streetTileLayer = null;
+        var satelliteHybridLayer = null;
+        var currentMapStyle = "streets";
         var userMarker = null;
         var accuracyCircle = null;
         var startMarker = null;
@@ -84,7 +79,7 @@
         var currentLng = 0;
 
         function initZeviraMap(startLat, startLng, style) {
-            currentMapStyle = style || "real_life";
+            currentMapStyle = style || "streets";
             currentLat = startLat || -6.2088;
             currentLng = startLng || 106.8456;
 
@@ -96,10 +91,16 @@
                 preferCanvas: true
             });
 
-            // Satellite Layer (Esri World Imagery)
-            satelliteTileLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-                maxZoom: 19,
-                attribution: 'Tiles &copy; Esri'
+            // 1. Street Map (Google Maps standard roadmap: roads, names, rivers, POIs)
+            streetTileLayer = L.tileLayer('https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+                maxZoom: 20,
+                subdomains: ['0', '1', '2', '3']
+            });
+
+            // 2. Satellite Hybrid (Satellite photography + roads & Indonesian labels)
+            satelliteHybridLayer = L.tileLayer('https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+                maxZoom: 20,
+                subdomains: ['0', '1', '2', '3']
             });
 
             applyMapStyle(currentMapStyle);
@@ -134,21 +135,28 @@
         }
 
         function setMapStyle(style) {
-            currentMapStyle = style;
             applyMapStyle(style);
         }
 
         function applyMapStyle(style) {
-            var container = document.getElementById('map');
-            if (style === "clean_white") {
-                if (satelliteTileLayer && map.hasLayer(satelliteTileLayer)) {
-                    map.removeLayer(satelliteTileLayer);
+            currentMapStyle = style;
+            if (!map) return;
+            var isSatellite = (style === "satellite_hybrid" || style === "satelit" || style === "real_life");
+
+            if (isSatellite) {
+                if (streetTileLayer && map.hasLayer(streetTileLayer)) {
+                    map.removeLayer(streetTileLayer);
                 }
-                container.classList.add('clean-white-grid');
+                if (satelliteHybridLayer && !map.hasLayer(satelliteHybridLayer)) {
+                    satelliteHybridLayer.addTo(map);
+                }
             } else {
-                container.classList.remove('clean-white-grid');
-                if (satelliteTileLayer && !map.hasLayer(satelliteTileLayer)) {
-                    satelliteTileLayer.addTo(map);
+                // Default to Street Map (Peta Jalan)
+                if (satelliteHybridLayer && map.hasLayer(satelliteHybridLayer)) {
+                    map.removeLayer(satelliteHybridLayer);
+                }
+                if (streetTileLayer && !map.hasLayer(streetTileLayer)) {
+                    streetTileLayer.addTo(map);
                 }
             }
         }
