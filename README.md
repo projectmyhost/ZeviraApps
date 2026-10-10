@@ -126,8 +126,8 @@ Panduan konfigurasi dan instalasi backend dapat dilihat pada [server/README.md](
 
 1. **Kloning Repositori**:
    ```bash
-   git clone https://github.com/projectmyhost/zevira.git
-   cd zevira
+   git clone https://github.com/projectmyhost/ZeviraApps.git
+   cd ZeviraApps
    ```
 
 2. **Kompilasi APK Debug**:
