@@ -13,37 +13,38 @@
             margin: 0;
             padding: 0;
             overflow: hidden;
-            background-color: #F8FAFD;
+            background-color: #0A0B0F;
             font-family: sans-serif;
             -webkit-user-select: none;
             user-select: none;
         }
-        /* Custom markers */
-        .user-marker {
-            position: relative;
-            width: 24px;
-            height: 24px;
+        /* Dark mode filter for street tiles */
+        .dark-tiles .leaflet-tile {
+            filter: invert(100%) hue-rotate(180deg) brightness(92%) contrast(96%);
+        }
+        /* Custom glowing blue user marker */
+        .user-marker-wrap {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .user-pulse {
+            width: 36px;
+            height: 36px;
+            background-color: rgba(45, 123, 255, 0.28);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 14px rgba(45, 123, 255, 0.5);
         }
         .user-dot {
-            width: 18px;
-            height: 18px;
+            width: 16px;
+            height: 16px;
             background-color: #2D7BFF;
-            border: 3px solid #FFFFFF;
+            border: 3.5px solid #FFFFFF;
             border-radius: 50%;
-            box-shadow: 0 2px 6px rgba(15, 27, 61, 0.4);
-            margin: 3px auto;
-        }
-        .user-heading {
-            width: 0;
-            height: 0;
-            border-left: 6px solid transparent;
-            border-right: 6px solid transparent;
-            border-bottom: 10px solid #FFD84D;
-            margin: 0 auto;
-            position: absolute;
-            top: -6px;
-            left: 6px;
-            transform-origin: bottom center;
+            box-shadow: 0 0 6px rgba(0, 0, 0, 0.6);
         }
         .start-marker {
             width: 22px;
@@ -62,7 +63,7 @@
     </style>
 </head>
 <body>
-    <div id="map"></div>
+    <div id="map" class="dark-tiles"></div>
     <script src="leaflet.js"></script>
     <script>
         var map = null;
@@ -91,23 +92,23 @@
                 preferCanvas: true
             });
 
-            // 1. Street Map (Google Maps standard roadmap: roads, names, rivers, POIs)
-            streetTileLayer = L.tileLayer('https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+            // 1. Street Map (Google Maps standard roadmap)
+            streetTileLayer = L.tileLayer('https://mt{s}.google.com/vt/lyrs=m&hl=id&x={x}&y={y}&z={z}', {
                 maxZoom: 20,
                 subdomains: ['0', '1', '2', '3']
             });
 
-            // 2. Satellite Hybrid (Satellite photography + roads & Indonesian labels)
-            satelliteHybridLayer = L.tileLayer('https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+            // 2. Satellite Hybrid
+            satelliteHybridLayer = L.tileLayer('https://mt{s}.google.com/vt/lyrs=y&hl=id&x={x}&y={y}&z={z}', {
                 maxZoom: 20,
                 subdomains: ['0', '1', '2', '3']
             });
 
             applyMapStyle(currentMapStyle);
 
-            // Polylines
+            // Polylines with neon orange glowing route
             routePolyline = L.polyline([], {
-                color: '#2D7BFF',
+                color: '#F37812',
                 weight: 5,
                 opacity: 0.95,
                 lineJoin: 'round',
@@ -115,7 +116,7 @@
             }).addTo(map);
 
             highlightPolyline = L.polyline([], {
-                color: '#FFD84D',
+                color: '#FFA834',
                 weight: 6,
                 opacity: 0.9,
                 dashArray: '10, 10'
@@ -142,8 +143,10 @@
             currentMapStyle = style;
             if (!map) return;
             var isSatellite = (style === "satellite_hybrid" || style === "satelit" || style === "real_life");
+            var mapEl = document.getElementById('map');
 
             if (isSatellite) {
+                if (mapEl) mapEl.classList.remove('dark-tiles');
                 if (streetTileLayer && map.hasLayer(streetTileLayer)) {
                     map.removeLayer(streetTileLayer);
                 }
@@ -151,7 +154,7 @@
                     satelliteHybridLayer.addTo(map);
                 }
             } else {
-                // Default to Street Map (Peta Jalan)
+                if (mapEl) mapEl.classList.add('dark-tiles');
                 if (satelliteHybridLayer && map.hasLayer(satelliteHybridLayer)) {
                     map.removeLayer(satelliteHybridLayer);
                 }
@@ -182,14 +185,14 @@
             currentLat = lat;
             currentLng = lng;
 
-            // Accuracy circle
+            // Accuracy circle with blue tint
             if (!accuracyCircle) {
                 accuracyCircle = L.circle([lat, lng], {
                     radius: accuracy || 10,
                     color: '#2D7BFF',
-                    fillColor: '#7CC4FF',
-                    fillOpacity: 0.2,
-                    weight: 1.5
+                    fillColor: '#2D7BFF',
+                    fillOpacity: 0.12,
+                    weight: 1.2
                 }).addTo(map);
             } else {
                 accuracyCircle.setLatLng([lat, lng]);
@@ -197,27 +200,19 @@
             }
 
             // User marker
-            var headingDeg = heading || 0;
             if (!userMarker) {
                 var userIcon = L.divIcon({
                     className: 'user-marker-wrap',
-                    html: '<div class="user-marker"><div class="user-heading" style="transform: rotate(' + headingDeg + 'deg);"></div><div class="user-dot"></div></div>',
-                    iconSize: [24, 24],
-                    iconAnchor: [12, 12]
+                    html: '<div class="user-pulse"><div class="user-dot"></div></div>',
+                    iconSize: [36, 36],
+                    iconAnchor: [18, 18]
                 });
                 userMarker = L.marker([lat, lng], { icon: userIcon, zIndexOffset: 1000 }).addTo(map);
             } else {
                 userMarker.setLatLng([lat, lng]);
-                var el = userMarker.getElement();
-                if (el) {
-                    var headingEl = el.querySelector('.user-heading');
-                    if (headingEl) {
-                        headingEl.style.transform = 'rotate(' + headingDeg + 'deg)';
-                    }
-                }
             }
 
-            // Realtime tracking polyline (draws live route behind user like Strava)
+            // Realtime tracking polyline
             if (isTracking && routePolyline) {
                 routePolyline.addLatLng([lat, lng]);
             }

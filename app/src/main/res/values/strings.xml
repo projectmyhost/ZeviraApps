@@ -10,7 +10,7 @@
 
     <!-- Dashboard -->
     <string name="greeting_day">Halo, Penjelajah!</string>
-    <string name="greeting_sub">Siap merekam petualanganmu hari ini?</string>
+    <string name="greeting_sub">Siap melangkah lebih jauh hari ini?</string>
     <string name="btn_start_tracking">GO</string>
     <string name="mode_walk">Jalan-jalan</string>
     <string name="mode_sport">Olahraga</string>

@@ -63,8 +63,9 @@ class DashboardViewModel @Inject constructor(
         authInfoFlow,
         _selectedMode,
         _showGatewaySheet,
-        tripDao.observeActiveUnfinishedTrip()
-    ) { auth, mode, showSheet, unfinishedTrip ->
+        tripDao.observeActiveUnfinishedTrip(),
+        preferencesDataStore.totalStarsFlow
+    ) { auth, mode, showSheet, unfinishedTrip, totalStars ->
         DashboardUiState(
             isGuest = auth.isGuest,
             isDemo = auth.isDemo,
@@ -73,7 +74,8 @@ class DashboardViewModel @Inject constructor(
             displayName = auth.displayName,
             selectedMode = mode,
             showGatewaySheet = showSheet,
-            activeUnfinishedTrip = unfinishedTrip
+            activeUnfinishedTrip = unfinishedTrip,
+            totalStars = totalStars
         )
     }.stateIn(
         scope = viewModelScope,
